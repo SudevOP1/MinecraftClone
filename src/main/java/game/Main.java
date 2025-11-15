@@ -2,6 +2,7 @@ package game;
 
 import engine.Engine;
 import engine.Window;
+import engine.graph.Mesh;
 import engine.graph.Render;
 import engine.scene.Scene;
 
@@ -22,7 +23,13 @@ public class Main implements IAppLogic {
 
     @Override
     public void init(Window window, Scene scene, Render render) {
-        // nothing to be done yet
+        float[] positions = new float[] {
+                0.0f, 0.5f, -1.0f,
+                -0.5f, -0.5f, -1.0f,
+                0.5f, -0.5f, -1.0f
+        };
+        Mesh mesh = new Mesh(positions, 3);
+        scene.addMesh("triangle", mesh);
     }
 
     @Override
