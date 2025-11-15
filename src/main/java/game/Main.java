@@ -5,7 +5,6 @@ import engine.Window;
 import engine.Render;
 import engine.Scene;
 
-import utils.Helpers;
 import engine.IAppLogic;
 
 public class Main implements IAppLogic {
