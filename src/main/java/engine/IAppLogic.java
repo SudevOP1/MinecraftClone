@@ -1,5 +1,8 @@
 package engine;
 
+import engine.scene.Scene;
+import engine.graph.Render;
+
 public interface IAppLogic {
 
     void cleanup();

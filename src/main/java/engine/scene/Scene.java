@@ -1,4 +1,4 @@
-package engine;
+package engine.scene;
 
 public class Scene {
 

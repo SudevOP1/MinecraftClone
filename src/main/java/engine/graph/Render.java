@@ -1,4 +1,7 @@
-package engine;
+package engine.graph;
+
+import engine.Window;
+import engine.scene.Scene;
 
 import org.lwjgl.opengl.GL;
 import static org.lwjgl.opengl.GL11.*;

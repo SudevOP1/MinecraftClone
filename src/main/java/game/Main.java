@@ -2,8 +2,8 @@ package game;
 
 import engine.Engine;
 import engine.Window;
-import engine.Render;
-import engine.Scene;
+import engine.graph.Render;
+import engine.scene.Scene;
 
 import engine.IAppLogic;
 
