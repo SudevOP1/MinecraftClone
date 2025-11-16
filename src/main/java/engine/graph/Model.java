@@ -2,35 +2,36 @@ package engine.graph;
 
 import engine.scene.Entity;
 
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
 public class Model {
 
     private final String id;
     private List<Entity> entitiesList;
-    private List<Mesh> meshList;
+    private List<Material> materialList;
 
-    public Model(String id, List<Mesh> meshList) {
+    public Model(String id, List<Material> materialList) {
         this.id = id;
-        this.meshList = meshList;
+        this.materialList = materialList;
         this.entitiesList = new ArrayList<>();
     }
 
-    public void cleanup() {
-        meshList.forEach(Mesh::cleanup);
-    }
-
     public List<Entity> getEntitiesList() {
-        return entitiesList;
+        return this.entitiesList;
     }
 
     public String getId() {
-        return id;
+        return this.id;
     }
 
-    public List<Mesh> getMeshList() {
-        return meshList;
+    public List<Material> getMaterialList() {
+        return this.materialList;
+    }
+
+    public void cleanup() {
+        this.materialList.forEach((material) -> {
+            material.cleanup();
+        });
     }
 
 }
