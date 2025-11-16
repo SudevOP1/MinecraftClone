@@ -1,5 +1,6 @@
 package engine.graph;
 
+import engine.scene.Entity;
 import engine.scene.Scene;
 
 import java.util.*;
@@ -30,22 +31,28 @@ public class SceneRender {
 
     public void render(Scene scene) {
         shaderProgram.bind();
-
         uniformsMap.setUniform("projectionMatrix", scene.getProjection().getProjMatrix());
 
-        scene.getMeshMap().values().forEach(mesh -> {
-            glBindVertexArray(mesh.getVaoId());
-            glDrawElements(GL_TRIANGLES, mesh.getNumVertices(), GL_UNSIGNED_INT, 0);
-        });
+        Collection<Model> models = scene.getModelMap().values();
+        for (Model model : models) {
+            model.getMeshList().stream().forEach(mesh -> {
+                glBindVertexArray(mesh.getVaoId());
+                List<Entity> entities = model.getEntitiesList();
+                for (Entity entity : entities) {
+                    uniformsMap.setUniform("modelMatrix", entity.getModelMatrix());
+                    glDrawElements(GL_TRIANGLES, mesh.getNumVertices(), GL_UNSIGNED_INT, 0);
+                }
+            });
+        }
 
         glBindVertexArray(0);
-
         shaderProgram.unbind();
     }
 
-    public void createUniforms() {
+    private void createUniforms() {
         this.uniformsMap = new UniformsMap(shaderProgram.getProgramId());
         this.uniformsMap.createUniform("projectionMatrix");
+        this.uniformsMap.createUniform("modelMatrix");
     }
 
 }

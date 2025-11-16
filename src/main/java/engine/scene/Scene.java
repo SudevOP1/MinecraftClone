@@ -1,17 +1,40 @@
 package engine.scene;
 
-import engine.graph.Mesh;
+import engine.graph.Model;
 
 import java.util.*;
 
 public class Scene {
 
-    private Map<String, Mesh> meshMap;
+    private Map<String, Model> modelMap;
     private Projection projection;
 
     public Scene(int width, int height) {
-        meshMap = new HashMap<>();
+        this.modelMap = new HashMap<>();
         this.projection = new Projection(width, height);
+    }
+
+    public void addEntity(Entity entity) {
+        String modelId = entity.getModelId();
+        Model model = modelMap.get(modelId);
+        if (model == null) {
+            throw new RuntimeException("Could not find model [" + modelId + "]");
+        }
+        model.getEntitiesList().add(entity);
+    }
+
+    public void addModel(Model model) {
+        modelMap.put(model.getId(), model);
+    }
+
+    public void cleanup() {
+        modelMap.values().forEach((model) -> {
+            model.cleanup();
+        });
+    }
+
+    public Map<String, Model> getModelMap() {
+        return modelMap;
     }
 
     public Projection getProjection() {
@@ -22,17 +45,4 @@ public class Scene {
         this.projection.updateProjMatrix(width, height);
     }
 
-    public void addMesh(String meshID, Mesh mesh) {
-        meshMap.put(meshID, mesh);
-    }
-
-    public void cleanup() {
-        meshMap.values().forEach((mesh) -> {
-            mesh.cleanup();
-        });
-    }
-
-    public Map<String, Mesh> getMeshMap() {
-        return meshMap;
-    }
 }
