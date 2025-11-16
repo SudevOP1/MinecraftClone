@@ -7,9 +7,19 @@ import java.util.*;
 public class Scene {
 
     private Map<String, Mesh> meshMap;
+    private Projection projection;
 
-    public Scene() {
+    public Scene(int width, int height) {
         meshMap = new HashMap<>();
+        this.projection = new Projection(width, height);
+    }
+
+    public Projection getProjection() {
+        return this.projection;
+    }
+
+    public void resize(int width, int height) {
+        this.projection.updateProjMatrix(width, height);
     }
 
     public void addMesh(String meshID, Mesh mesh) {

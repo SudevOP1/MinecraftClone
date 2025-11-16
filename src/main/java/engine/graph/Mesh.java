@@ -49,7 +49,7 @@ public class Mesh {
         indicesBuffer.put(indices).flip();
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboId);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL_STATIC_DRAW);
-        
+
         // unbind VBOs (VAO keeps the element buffer binding)
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
