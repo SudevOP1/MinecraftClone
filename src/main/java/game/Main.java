@@ -152,6 +152,12 @@ public class Main implements IAppLogic {
 
         float move = diffTimeMillis * MOVEMENT_SPEED;
         Camera camera = scene.getCamera();
+
+        // Vector3f pos = camera.getPosition();
+        // Vector2f rot = camera.getRotation();
+        // System.out.printf("[CAM] x=%f, y=%f, z=%f, rx=%f, ry=%f\n", pos.z, pos.y,
+        // pos.z, rot.x, rot.y);
+
         if (window.isKeyPressed(GLFW_KEY_W)) {
             camera.moveForward(move);
         }
@@ -173,8 +179,9 @@ public class Main implements IAppLogic {
 
         MouseInput mouseInput = window.getMouseInput();
         Vector2f displVec = mouseInput.getDisplVec();
-        camera.addRotation((float) java.lang.Math.toRadians(displVec.x * MOUSE_SENSITIVITY),
-                (float) -java.lang.Math.toRadians(displVec.y * MOUSE_SENSITIVITY));
+        camera.addRotation(-(float) java.lang.Math.toRadians(displVec.x * MOUSE_SENSITIVITY),
+                -(float) java.lang.Math.toRadians(displVec.y * MOUSE_SENSITIVITY),
+                0);
 
         displayInc.zero();
         if (window.isKeyPressed(GLFW_KEY_UP)) {
@@ -213,12 +220,13 @@ public class Main implements IAppLogic {
 
     @Override
     public void update(Window window, Scene scene, long diffTimeMillis) {
-        rotation += 0.5;
-        if (rotation > 360) {
-            rotation = rotation % 360;
-        }
-        cubeEntity.setRotation(1, 1, 1, (float) java.lang.Math.toRadians(rotation));
-        cubeEntity.updateModelMatrix();
+        // // rotatig the block
+        // rotation += 0.5;
+        // if (rotation > 360) {
+        // rotation = rotation % 360;
+        // }
+        // cubeEntity.setRotation(1, 1, 1, (float) java.lang.Math.toRadians(rotation));
+        // cubeEntity.updateModelMatrix();
     }
 
     @Override

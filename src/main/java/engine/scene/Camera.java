@@ -4,82 +4,118 @@ import org.joml.*;
 
 public class Camera {
     private Vector3f position = new Vector3f(0, 0, 0);
-    private Vector2f rotation = new Vector2f(0, 0);
+    private Vector3f rotation = new Vector3f(0, 0, (float) java.lang.Math.PI); // pitch, yaw, roll
     private Matrix4f viewMatrix = new Matrix4f();
 
-    // computed direction vectors private
-    Vector3f forward = new Vector3f();
+    // computed direction vectors
+    private Vector3f forward = new Vector3f();
     private Vector3f right = new Vector3f();
     private Vector3f up = new Vector3f(0, 1, 0);
 
+    public Camera() {
+        this.recalc();
+    }
+
     public Vector3f getPosition() {
-        return position;
+        return this.position;
     }
 
     public Matrix4f getViewMatrix() {
-        return viewMatrix;
+        return this.viewMatrix;
+    }
+
+    public Vector3f getRotation() {
+        return this.rotation;
     }
 
     public void setPosition(float x, float y, float z) {
-        position.set(x, y, z);
-        recalc();
+        this.position.set(x, y, z);
+        this.recalc();
     }
 
-    public void setRotation(float pitch, float yaw) {
-        rotation.set(pitch, yaw);
-        clampRotation();
-        recalc();
+    public void setRotation(float pitch, float yaw, float roll) {
+        this.rotation.set(pitch, yaw, roll);
+        this.clampRotation();
+        this.recalc();
     }
 
-    public void addRotation(float dp, float dy) {
-        rotation.add(dp, dy);
-        clampRotation();
-        recalc();
+    public void addRotation(float dp, float dy, float dr) {
+        this.rotation.add(dp, dy, dr);
+        this.clampRotation();
+        this.recalc();
     }
 
     private void clampRotation() {
-        if (rotation.x > java.lang.Math.toRadians(89)) {
-            rotation.x = (float) java.lang.Math.toRadians(89);
+        // Clamp pitch to prevent gimbal lock
+        if (this.rotation.x > java.lang.Math.toRadians(89)) {
+            this.rotation.x = (float) java.lang.Math.toRadians(89);
         }
-        if (rotation.x < java.lang.Math.toRadians(-89)) {
-            rotation.x = (float) java.lang.Math.toRadians(-89);
+        if (this.rotation.x < java.lang.Math.toRadians(-89)) {
+            this.rotation.x = (float) java.lang.Math.toRadians(-89);
         }
     }
 
     private void recalc() {
+        float pitch = this.rotation.x;
+        float yaw = this.rotation.y;
+        float roll = this.rotation.z;
 
         // Compute forward vector from pitch + yaw
-        forward.set((float) (java.lang.Math.cos(rotation.x) * java.lang.Math.sin(rotation.y)),
-                (float) java.lang.Math.sin(-rotation.x),
-                (float) (java.lang.Math.cos(rotation.x) * java.lang.Math.cos(rotation.y))).normalize();
+        this.forward.set(
+                (float) (java.lang.Math.cos(pitch) * java.lang.Math.sin(yaw)),
+                (float) java.lang.Math.sin(pitch),
+                (float) (java.lang.Math.cos(pitch) * java.lang.Math.cos(yaw))).normalize();
 
-        // Compute right vector
-        right.set(forward.z, 0, -forward.x).normalize();
+        // Compute right vector (perpendicular to forward in XZ plane initially)
+        this.right.set(this.forward.z, 0, -this.forward.x).normalize();
 
-        // Up is recalculated as cross(forward, right)
-        up.set(right).cross(forward).normalize();
+        // Compute initial up vector (perpendicular to both forward and right)
+        this.up.set(this.right).cross(this.forward).normalize();
+
+        // Apply roll rotation around the forward axis
+        if (roll != 0) {
+            // Rotate right and up vectors around the forward axis
+            float cosRoll = (float) java.lang.Math.cos(roll);
+            float sinRoll = (float) java.lang.Math.sin(roll);
+
+            Vector3f tempRight = new Vector3f(this.right);
+            Vector3f tempUp = new Vector3f(this.up);
+
+            this.right.set(
+                    tempRight.x * cosRoll - tempUp.x * sinRoll,
+                    tempRight.y * cosRoll - tempUp.y * sinRoll,
+                    tempRight.z * cosRoll - tempUp.z * sinRoll).normalize();
+
+            this.up.set(
+                    tempRight.x * sinRoll + tempUp.x * cosRoll,
+                    tempRight.y * sinRoll + tempUp.y * cosRoll,
+                    tempRight.z * sinRoll + tempUp.z * cosRoll).normalize();
+        }
 
         // Build view matrix = lookAt
-        viewMatrix.identity().lookAt(position, new Vector3f(position).add(forward), up);
+        this.viewMatrix.identity().lookAt(
+                this.position,
+                new Vector3f(this.position).add(this.forward),
+                this.up);
     }
 
     public void moveForward(float amt) {
-        position.add(forward.x * amt, forward.y * amt, forward.z * amt);
-        recalc();
+        this.position.add(this.forward.x * amt, this.forward.y * amt, this.forward.z * amt);
+        this.recalc();
     }
 
     public void moveLeft(float amt) {
-        position.sub(right.x * amt, right.y * amt, right.z * amt);
-        recalc();
+        this.position.sub(this.right.x * amt, this.right.y * amt, this.right.z * amt);
+        this.recalc();
     }
 
     public void moveRight(float amt) {
-        position.add(right.x * amt, right.y * amt, right.z * amt);
-        recalc();
+        this.position.add(this.right.x * amt, this.right.y * amt, this.right.z * amt);
+        this.recalc();
     }
 
     public void moveUp(float amt) {
-        position.add(0, amt, 0);
-        recalc();
+        this.position.add(0, amt, 0);
+        this.recalc();
     }
 }
