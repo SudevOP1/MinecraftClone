@@ -12,6 +12,7 @@ public class MouseInput {
     private boolean inWindow;
     private boolean leftButtonPressed;
     private boolean rightButtonPressed;
+    private long windowHandle;
 
     public MouseInput(long windowHandle) {
         this.previousPos = new Vector2f(-1, -1);
@@ -20,6 +21,7 @@ public class MouseInput {
         this.leftButtonPressed = false;
         this.rightButtonPressed = false;
         this.inWindow = false;
+        this.windowHandle = windowHandle;
 
         glfwSetCursorPosCallback(windowHandle, (handle, xpos, ypos) -> {
             this.currentPos.x = (float) xpos;
@@ -51,22 +53,26 @@ public class MouseInput {
     }
 
     public void input() {
-        this.displVec.x = 0;
-        this.displVec.y = 0;
-        if (this.previousPos.x > 0 && this.previousPos.y > 0 && this.inWindow) {
-            double deltax = this.currentPos.x - this.previousPos.x;
-            double deltay = this.currentPos.y - this.previousPos.y;
-            boolean rotateX = deltax != 0;
-            boolean rotateY = deltay != 0;
-            if (rotateX) {
-                this.displVec.y = (float) deltax;
-            }
-            if (rotateY) {
-                this.displVec.x = (float) deltay;
-            }
+        displVec.x = 0;
+        displVec.y = 0;
+
+        if (inWindow) {
+            double deltax = currentPos.x - previousPos.x;
+            double deltay = currentPos.y - previousPos.y;
+
+            if (deltax != 0)
+                displVec.y = (float) deltax;
+            if (deltay != 0)
+                displVec.x = (float) deltay;
         }
-        this.previousPos.x = this.currentPos.x;
-        this.previousPos.y = this.currentPos.y;
+
+        // Recenter mouse
+        int[] w = new int[1];
+        int[] h = new int[1];
+        glfwGetWindowSize(this.windowHandle, w, h);
+        glfwSetCursorPos(this.windowHandle, w[0] / 2.0, h[0] / 2.0);
+
+        previousPos.set(w[0] / 2.0f, h[0] / 2.0f);
     }
 
 }
