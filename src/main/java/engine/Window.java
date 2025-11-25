@@ -18,6 +18,7 @@ public class Window {
     private int width;
     private int height;
     private Callable<Void> resizeFunc;
+    private MouseInput mouseInput;
 
     public static class WindowOptions {
         public boolean compatibleProfile;
@@ -89,6 +90,8 @@ public class Window {
         glfwGetFramebufferSize(windowHandle, arrWidth, arrHeight);
         width = arrWidth[0];
         height = arrHeight[0];
+
+        mouseInput = new MouseInput(windowHandle);
     }
 
     public void keyCallBack(int key, int action) {
@@ -117,6 +120,10 @@ public class Window {
 
     public long getWindowHandle() {
         return windowHandle;
+    }
+
+    public MouseInput getMouseInput() {
+        return this.mouseInput;
     }
 
     public boolean isKeyPressed(int keyCode) {

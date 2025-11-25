@@ -8,8 +8,10 @@ import engine.graph.Model;
 import engine.graph.Render;
 import engine.graph.Texture;
 import engine.scene.Scene;
+import engine.scene.Camera;
 import engine.scene.Entity;
 import engine.IAppLogic;
+import engine.MouseInput;
 
 import java.util.*;
 
@@ -21,6 +23,9 @@ public class Main implements IAppLogic {
     private Entity cubeEntity;
     private Vector4f displayInc = new Vector4f();
     private float rotation;
+
+    public static final float MOUSE_SENSITIVITY = 0.1f;
+    public static final float MOVEMENT_SPEED = 0.002f;
 
     public static void main(String[] args) {
         Main main = new Main();
@@ -145,6 +150,32 @@ public class Main implements IAppLogic {
     @Override
     public void input(Window window, Scene scene, long diffTimeMillis) {
 
+        float move = diffTimeMillis * MOVEMENT_SPEED;
+        Camera camera = scene.getCamera();
+        if (window.isKeyPressed(GLFW_KEY_W)) {
+            camera.moveForward(move);
+        }
+        if (window.isKeyPressed(GLFW_KEY_S)) {
+            camera.moveForward(-move);
+        }
+        if (window.isKeyPressed(GLFW_KEY_A)) {
+            camera.moveLeft(move);
+        }
+        if (window.isKeyPressed(GLFW_KEY_D)) {
+            camera.moveRight(move);
+        }
+        if (window.isKeyPressed(GLFW_KEY_SPACE)) {
+            camera.moveUp(move);
+        }
+        if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
+            camera.moveUp(-move);
+        }
+
+        MouseInput mouseInput = window.getMouseInput();
+        Vector2f displVec = mouseInput.getDisplVec();
+        camera.addRotation((float) java.lang.Math.toRadians(displVec.x * MOUSE_SENSITIVITY),
+                (float) -java.lang.Math.toRadians(displVec.y * MOUSE_SENSITIVITY));
+
         displayInc.zero();
         if (window.isKeyPressed(GLFW_KEY_UP)) {
             displayInc.y += 1;
@@ -170,11 +201,11 @@ public class Main implements IAppLogic {
         if (window.isKeyPressed(GLFW_KEY_X)) {
             displayInc.w += 1;
         }
-
         displayInc.mul(diffTimeMillis / 1000.0f);
 
         Vector3f entityPos = cubeEntity.getPosition();
-        cubeEntity.setPosition(displayInc.x + entityPos.x, displayInc.y + entityPos.y, displayInc.z + entityPos.z);
+        cubeEntity.setPosition(displayInc.x + entityPos.x, displayInc.y +
+                entityPos.y, displayInc.z + entityPos.z);
         cubeEntity.setScale(cubeEntity.getScale() + displayInc.w);
         cubeEntity.updateModelMatrix();
 

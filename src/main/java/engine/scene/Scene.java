@@ -10,11 +10,13 @@ public class Scene {
     private Map<String, Model> modelMap;
     private Projection projection;
     private TextureCache textureCache;
+    private Camera camera;
 
     public Scene(int width, int height) {
         this.modelMap = new HashMap<>();
         this.projection = new Projection(width, height);
         this.textureCache = new TextureCache();
+        camera = new Camera();
     }
 
     public void addEntity(Entity entity) {
@@ -40,6 +42,10 @@ public class Scene {
 
     public TextureCache getTextureCache() {
         return this.textureCache;
+    }
+
+    public Camera getCamera() {
+        return this.camera;
     }
 
     public void resize(int width, int height) {
