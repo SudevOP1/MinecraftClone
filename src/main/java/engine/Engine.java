@@ -15,26 +15,26 @@ public class Engine {
     private int targetUps;
 
     public Engine(String windowTitle, Window.WindowOptions opts, IAppLogic appLogic) {
-        window = new Window(windowTitle, opts, () -> {
+        this.window = new Window(windowTitle, opts, () -> {
             resize();
             return null;
         });
-        targetFps = opts.fps;
-        targetUps = opts.ups;
+        this.targetFps = opts.fps;
+        this.targetUps = opts.ups;
         this.appLogic = appLogic;
-        render = new Render();
-        scene = new Scene(window.getWidth(), window.getHeight());
-        appLogic.init(window, scene, render);
-        running = true;
+        this.render = new Render();
+        this.scene = new Scene(window.getWidth(), window.getHeight());
+        this.appLogic.init(window, scene, render);
+        this.running = true;
     }
 
     public void start() {
-        running = true;
-        run();
+        this.running = true;
+        this.run();
     }
 
     public void stop() {
-        running = false;
+        this.running = false;
     }
 
     private void run() {
@@ -46,29 +46,29 @@ public class Engine {
         float timeR = targetFps > 0 ? 1000.0f / targetFps : 0; // maximum elapsed time between render calls
 
         long updateTime = initialTime;
-        while (running && !window.windowShouldClose()) {
-            window.pollEvents();
+        while (running && !this.window.windowShouldClose()) {
+            this.window.pollEvents();
 
             long now = System.currentTimeMillis();
             deltaUpdate += (now - initialTime) / timeU;
             deltaFps += (now - initialTime) / timeR;
 
-            if (targetFps <= 0 || deltaFps >= 1) {
-                window.getMouseInput().input();
-                appLogic.input(window, scene, now - initialTime);
+            if (this.targetFps <= 0 || deltaFps >= 1) {
+                this.window.getMouseInput().input();
+                this.appLogic.input(this.window, this.scene, now - initialTime);
             }
 
             if (deltaUpdate >= 1) {
                 long diffTimeMillis = now - updateTime;
-                appLogic.update(window, scene, diffTimeMillis);
+                this.appLogic.update(this.window, this.scene, diffTimeMillis);
                 updateTime = now;
                 deltaUpdate--;
             }
 
-            if (targetFps <= 0 || deltaFps >= 1) {
-                render.render(window, scene);
+            if (this.targetFps <= 0 || deltaFps >= 1) {
+                this.render.render(this.window, this.scene);
                 deltaFps--;
-                window.update();
+                this.window.update();
             }
             initialTime = now;
         }
