@@ -19,6 +19,13 @@ public class Scene {
         camera = new Camera();
     }
 
+    public Scene(int width, int height, float x, float y, float z) {
+        this.modelMap = new HashMap<>();
+        this.projection = new Projection(width, height);
+        this.textureCache = new TextureCache();
+        camera = new Camera(x, y, z);
+    }
+
     public void addEntity(Entity entity) {
         String modelId = entity.getModelId();
         Model model = modelMap.get(modelId);

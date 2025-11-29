@@ -8,6 +8,7 @@ import engine.scene.Camera;
 import engine.block.Block;
 import engine.IAppLogic;
 import engine.MouseInput;
+import data_structures.Vector3s;
 
 import org.joml.*;
 import java.util.*;
@@ -16,37 +17,52 @@ import static org.lwjgl.glfw.GLFW.*;
 public class Main implements IAppLogic {
 
     private List<Block> blocks;
+    private Map<Vector3s, Block> blockMap;
+    private boolean f3Pressed = false;
+    private boolean f2Pressed = false;
 
     public static final float MOUSE_SENSITIVITY = 0.1f;
     public static final float MOVEMENT_SPEED = 0.002f;
 
     public static void main(String[] args) {
         Main main = new Main();
-        Engine gameEng = new Engine("MinecraftClone", new Window.WindowOptions(), main);
+        Engine gameEng = new Engine("MinecraftClone", new Window.WindowOptions(), main, 0, 2, 0);
         gameEng.start();
     }
 
     @Override
     public void init(Window window, Scene scene, Render render) {
         blocks = new ArrayList<>();
+        blockMap = new HashMap<>();
+
+        // First pass: register all block positions
+        List<Vector3s> positions = new ArrayList<>();
         for (short i = 0; i < 10; i++) {
             for (short j = 0; j < 10; j++) {
-                blocks.add(new Block(scene, "models/grass_block.png", i, (short) 0, j));
+                for (short k = -9; k < 1; k++) {
+                    Vector3s pos = new Vector3s(i, k, j);
+                    positions.add(pos);
+                    blockMap.put(pos, null); // Reserve the position
+                }
             }
+        }
+
+        // Second pass: create blocks with neighbor checking
+        for (Vector3s pos : positions) {
+            Block block = new Block(scene, "models/grass_block.png", pos.x, pos.y, pos.z,
+                    p -> blockMap.containsKey(p));
+            blocks.add(block);
+            blockMap.put(pos, block); // Update with actual block
         }
     }
 
     @Override
-    public void input(Window window, Scene scene, long diffTimeMillis) {
+    public void input(Window window, Scene scene, long diffTimeMillis, Render render) {
 
         float move = diffTimeMillis * MOVEMENT_SPEED;
         Camera camera = scene.getCamera();
 
-        // Vector3f pos = camera.getPosition();
-        // Vector2f rot = camera.getRotation();
-        // System.out.printf("[CAM] x=%f, y=%f, z=%f, rx=%f, ry=%f\n", pos.z, pos.y,
-        // pos.z, rot.x, rot.y);
-
+        // WASD, space, shift movement
         if (window.isKeyPressed(GLFW_KEY_W)) {
             camera.moveForward(move);
         }
@@ -66,7 +82,27 @@ public class Main implements IAppLogic {
             camera.moveUp(-move);
         }
 
-        // Mouse look
+        // F2 to take screenshot
+        if (window.isKeyPressed(GLFW_KEY_F2)) {
+            if (!f2Pressed) {
+                render.takeScreenshot(window);
+                f2Pressed = true;
+            }
+        } else {
+            f2Pressed = false;
+        }
+
+        // F3 to toggle wireframe mode
+        if (window.isKeyPressed(GLFW_KEY_F3)) {
+            if (!f3Pressed) {
+                render.toggleWireframe();
+                f3Pressed = true;
+            }
+        } else {
+            f3Pressed = false;
+        }
+
+        // looking around using mouse
         MouseInput mouseInput = window.getMouseInput();
         Vector2f displVec = mouseInput.getDisplVec();
         camera.addRotation(
@@ -77,13 +113,6 @@ public class Main implements IAppLogic {
 
     @Override
     public void update(Window window, Scene scene, long diffTimeMillis) {
-        // // rotatig the block
-        // rotation += 0.5;
-        // if (rotation > 360) {
-        // rotation = rotation % 360;
-        // }
-        // cubeEntity.setRotation(1, 1, 1, (float) java.lang.Math.toRadians(rotation));
-        // cubeEntity.updateModelMatrix();
     }
 
     @Override

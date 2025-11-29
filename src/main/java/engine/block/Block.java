@@ -1,6 +1,7 @@
 package engine.block;
 
 import java.util.*;
+import java.util.function.Function;
 
 import engine.graph.*;
 import engine.scene.*;
@@ -100,26 +101,57 @@ public class Block {
                 1.0f, 0.5f,
         };
 
-        private static final int[] INDICES = new int[] {
+        private static final int[][] FACE_INDICES = new int[][] {
                 // Front face
-                0, 1, 3, 3, 1, 2,
+                { 0, 1, 3, 3, 1, 2 },
                 // Top Face
-                8, 10, 11, 9, 8, 11,
+                { 8, 10, 11, 9, 8, 11 },
                 // Right face
-                12, 13, 7, 5, 12, 7,
+                { 12, 13, 7, 5, 12, 7 },
                 // Left face
-                14, 15, 6, 4, 14, 6,
+                { 14, 15, 6, 4, 14, 6 },
                 // Bottom face
-                16, 18, 19, 17, 16, 19,
+                { 16, 18, 19, 17, 16, 19 },
                 // Back face
-                4, 6, 7, 5, 4, 7,
+                { 4, 6, 7, 5, 4, 7 }
         };
+
+        private static int[] buildIndices(boolean[] visibleFaces) {
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i < 6; i++) {
+                if (visibleFaces[i]) {
+                    for (int index : FACE_INDICES[i]) {
+                        indices.add(index);
+                    }
+                }
+            }
+            int[] result = new int[indices.size()];
+            for (int i = 0; i < indices.size(); i++) {
+                result[i] = indices.get(i);
+            }
+            return result;
+        }
     }
 
-    public Block(Scene scene, String texturePath, short x, short y, short z) {
+    public Block(Scene scene, String texturePath, short x, short y, short z, Function<Vector3s, Boolean> hasNeighbor) {
 
         this.position = new Vector3s(x, y, z);
         this.blockId = "block-" + Helpers.blockCounter++;
+
+        // Check which faces are visible (no neighbor blocking them)
+        boolean[] visibleFaces = new boolean[6];
+        // Front (+Z)
+        visibleFaces[0] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z + 1)));
+        // Top (+Y)
+        visibleFaces[1] = !hasNeighbor.apply(new Vector3s(x, (short) (y + 1), z));
+        // Right (+X)
+        visibleFaces[2] = !hasNeighbor.apply(new Vector3s((short) (x + 1), y, z));
+        // Left (-X)
+        visibleFaces[3] = !hasNeighbor.apply(new Vector3s((short) (x - 1), y, z));
+        // Bottom (-Y)
+        visibleFaces[4] = !hasNeighbor.apply(new Vector3s(x, (short) (y - 1), z));
+        // Back (-Z)
+        visibleFaces[5] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z - 1)));
 
         // load texture
         this.texture = scene.getTextureCache().createTexture(texturePath);
@@ -130,8 +162,9 @@ public class Block {
         List<Material> materialList = new ArrayList<>();
         materialList.add(material);
 
-        // create mesh
-        Mesh mesh = new Mesh(Helpers.POSITIONS, Helpers.TEXT_COORDS, Helpers.INDICES);
+        // create mesh with only visible faces
+        int[] indices = Helpers.buildIndices(visibleFaces);
+        Mesh mesh = new Mesh(Helpers.POSITIONS, Helpers.TEXT_COORDS, indices);
         material.getMeshList().add(mesh);
 
         // create model

@@ -3,8 +3,8 @@ package engine.scene;
 import org.joml.*;
 
 public class Camera {
-    private Vector3f position = new Vector3f(0, 0, 0);
-    private Vector3f rotation = new Vector3f(0, 0, (float) java.lang.Math.PI); // pitch, yaw, roll
+    private Vector3f position;
+    private Vector3f rotation;
     private Matrix4f viewMatrix = new Matrix4f();
 
     // computed direction vectors
@@ -13,6 +13,16 @@ public class Camera {
     private Vector3f up = new Vector3f(0, 1, 0);
 
     public Camera() {
+        this(0, 0, 0);
+    }
+
+    public Camera(float x, float y, float z) {
+        this(x, y, z, 0, 0, (float) java.lang.Math.PI);
+    }
+
+    public Camera(float x, float y, float z, float pitch, float yaw, float roll) {
+        this.position = new Vector3f(x, y, z);
+        this.rotation = new Vector3f(pitch, yaw, roll);
         this.recalc();
     }
 

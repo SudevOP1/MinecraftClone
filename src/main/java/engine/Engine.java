@@ -16,15 +16,29 @@ public class Engine {
 
     public Engine(String windowTitle, Window.WindowOptions opts, IAppLogic appLogic) {
         this.window = new Window(windowTitle, opts, () -> {
-            resize();
+            this.resize();
             return null;
         });
         this.targetFps = opts.fps;
         this.targetUps = opts.ups;
         this.appLogic = appLogic;
         this.render = new Render();
-        this.scene = new Scene(window.getWidth(), window.getHeight());
-        this.appLogic.init(window, scene, render);
+        this.scene = new Scene(this.window.getWidth(), this.window.getHeight());
+        this.appLogic.init(this.window, scene, render);
+        this.running = true;
+    }
+
+    public Engine(String windowTitle, Window.WindowOptions opts, IAppLogic appLogic, float x, float y, float z) {
+        this.window = new Window(windowTitle, opts, () -> {
+            this.resize();
+            return null;
+        });
+        this.targetFps = opts.fps;
+        this.targetUps = opts.ups;
+        this.appLogic = appLogic;
+        this.render = new Render();
+        this.scene = new Scene(this.window.getWidth(), this.window.getHeight(), x, y, z);
+        this.appLogic.init(this.window, scene, render);
         this.running = true;
     }
 
@@ -42,11 +56,11 @@ public class Engine {
         long initialTime = System.currentTimeMillis();
         float deltaUpdate = 0;
         float deltaFps = 0;
-        float timeU = 1000.0f / targetUps; // maximum elapsed time between updates
-        float timeR = targetFps > 0 ? 1000.0f / targetFps : 0; // maximum elapsed time between render calls
+        float timeU = 1000.0f / this.targetUps; // maximum elapsed time between updates
+        float timeR = this.targetFps > 0 ? 1000.0f / this.targetFps : 0; // maximum elapsed time between render calls
 
         long updateTime = initialTime;
-        while (running && !this.window.windowShouldClose()) {
+        while (this.running && !this.window.windowShouldClose()) {
             this.window.pollEvents();
 
             long now = System.currentTimeMillis();
@@ -55,7 +69,7 @@ public class Engine {
 
             if (this.targetFps <= 0 || deltaFps >= 1) {
                 this.window.getMouseInput().input();
-                this.appLogic.input(this.window, this.scene, now - initialTime);
+                this.appLogic.input(this.window, this.scene, now - initialTime, this.render);
             }
 
             if (deltaUpdate >= 1) {
@@ -73,18 +87,18 @@ public class Engine {
             initialTime = now;
         }
 
-        cleanup(); // to free the resources
+        this.cleanup(); // to free the resources
     }
 
     private void cleanup() {
-        appLogic.cleanup();
-        scene.cleanup();
-        render.cleanup();
-        window.cleanup();
+        this.appLogic.cleanup();
+        this.scene.cleanup();
+        this.render.cleanup();
+        this.window.cleanup();
     }
 
     private void resize() {
-        this.scene.resize(window.getWidth(), window.getHeight());
+        this.scene.resize(this.window.getWidth(), this.window.getHeight());
     }
 
 }

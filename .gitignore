@@ -17,3 +17,6 @@ pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
 *.log
+
+# screenshots (press F2)
+screenshots/

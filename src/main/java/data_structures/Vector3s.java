@@ -24,4 +24,21 @@ public class Vector3s {
         this.z = other.z;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        Vector3s other = (Vector3s) obj;
+        return x == other.x && y == other.y && z == other.z;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * (31 * x + y) + z;
+    }
+
 }
