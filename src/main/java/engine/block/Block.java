@@ -133,32 +133,27 @@ public class Block {
         }
     }
 
-    public Block(Scene scene, String texturePath, short x, short y, short z, Function<Vector3s, Boolean> hasNeighbor) {
+    public Block(Scene scene, BlockType type, short x, short y, short z,
+            Function<Vector3s, Boolean> hasNeighbor) {
 
         this.position = new Vector3s(x, y, z);
-        this.blockId = "block-" + Helpers.blockCounter++;
+        this.blockId = type.codename + "-" + Helpers.blockCounter++;
 
         // Check which faces are visible (no neighbor blocking them)
         boolean[] visibleFaces = new boolean[6];
-        // Front (+Z)
         visibleFaces[0] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z + 1)));
-        // Top (+Y)
         visibleFaces[1] = !hasNeighbor.apply(new Vector3s(x, (short) (y + 1), z));
-        // Right (+X)
         visibleFaces[2] = !hasNeighbor.apply(new Vector3s((short) (x + 1), y, z));
-        // Left (-X)
         visibleFaces[3] = !hasNeighbor.apply(new Vector3s((short) (x - 1), y, z));
-        // Bottom (-Y)
         visibleFaces[4] = !hasNeighbor.apply(new Vector3s(x, (short) (y - 1), z));
-        // Back (-Z)
         visibleFaces[5] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z - 1)));
 
         // load texture
-        this.texture = scene.getTextureCache().createTexture(texturePath);
+        this.texture = scene.getTextureCache().createTexture(type.texturePath);
 
         // create material
         Material material = new Material();
-        material.setTexturePath(texturePath);
+        material.setTexturePath(type.texturePath);
         List<Material> materialList = new ArrayList<>();
         materialList.add(material);
 

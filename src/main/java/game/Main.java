@@ -6,6 +6,8 @@ import engine.graph.Render;
 import engine.scene.Scene;
 import engine.scene.Camera;
 import engine.block.Block;
+import engine.block.BlockRegistry;
+import engine.block.BlockType;
 import engine.IAppLogic;
 import engine.MouseInput;
 import data_structures.Vector3s;
@@ -22,7 +24,7 @@ public class Main implements IAppLogic {
     private boolean f2Pressed = false;
 
     public static final float MOUSE_SENSITIVITY = 0.1f;
-    public static final float MOVEMENT_SPEED = 0.002f;
+    public static final float MOVEMENT_SPEED = 0.005f;
 
     public static void main(String[] args) {
         Main main = new Main();
@@ -35,25 +37,7 @@ public class Main implements IAppLogic {
         blocks = new ArrayList<>();
         blockMap = new HashMap<>();
 
-        // First pass: register all block positions
-        List<Vector3s> positions = new ArrayList<>();
-        for (short i = 0; i < 10; i++) {
-            for (short j = 0; j < 10; j++) {
-                for (short k = -9; k < 1; k++) {
-                    Vector3s pos = new Vector3s(i, k, j);
-                    positions.add(pos);
-                    blockMap.put(pos, null); // Reserve the position
-                }
-            }
-        }
-
-        // Second pass: create blocks with neighbor checking
-        for (Vector3s pos : positions) {
-            Block block = new Block(scene, "models/grass_block.png", pos.x, pos.y, pos.z,
-                    p -> blockMap.containsKey(p));
-            blocks.add(block);
-            blockMap.put(pos, block); // Update with actual block
-        }
+        this.generateBlocks(scene);
     }
 
     @Override
@@ -118,6 +102,33 @@ public class Main implements IAppLogic {
     @Override
     public void cleanup() {
         // nothing to be done yet
+    }
+
+    private void generateBlocks(Scene scene) {
+
+        // register all block positions
+        List<Vector3s> positions = new ArrayList<>();
+        for (short i = 0; i < 10; i++) {
+            for (short j = 0; j < 10; j++) {
+                for (short k = -9; k < 1; k++) {
+                    Vector3s pos = new Vector3s(i, k, j);
+                    positions.add(pos);
+                    blockMap.put(pos, null); // reserve the position
+                }
+            }
+        }
+
+        // create blocks with neighbor checking
+        BlockType grassType = BlockRegistry.get("grass_block");
+        for (Vector3s pos : positions) {
+            Block block = new Block(
+                    scene,
+                    grassType,
+                    pos.x, pos.y, pos.z,
+                    p -> blockMap.containsKey(p));
+            blocks.add(block);
+            blockMap.put(pos, block);
+        }
     }
 
 }
