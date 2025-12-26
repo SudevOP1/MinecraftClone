@@ -3,12 +3,44 @@
     {
       "name": "Default Texture",
       "codename": "default_texture",
-      "texturePath": "models/default_texture.png"
+      "texturePath": "models/default_texture.png",
+      "type": 1
     },
     {
       "name": "Grass Block",
       "codename": "grass_block",
-      "texturePath": "models/grass_block.png"
+      "texturePath": "models/grass_block.png",
+      "type": 3
+    },
+    {
+      "name": "Cobblestone",
+      "codename": "cobblestone",
+      "texturePath": "models/cobblestone.png",
+      "type": 3
+    },
+    {
+      "name": "Stone",
+      "codename": "stone",
+      "texturePath": "models/stone.png",
+      "type": 3
+    },
+    {
+      "name": "Oak Log",
+      "codename": "oak_log",
+      "texturePath": "models/oak_log.png",
+      "type": 2
+    },
+    {
+      "name": "Oak Plank",
+      "codename": "oak_plank",
+      "texturePath": "models/oak_plank.png",
+      "type": 3
+    },
+    {
+      "name": "Oak Leaves",
+      "codename": "oak_leaves",
+      "texturePath": "models/oak_leaves.png",
+      "type": 1
     }
   ]
 }

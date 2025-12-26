@@ -37,7 +37,7 @@ public class Main implements IAppLogic {
         blocks = new ArrayList<>();
         blockMap = new HashMap<>();
 
-        this.generateBlocks(scene);
+        this.initBlocks(scene);
     }
 
     @Override
@@ -104,31 +104,61 @@ public class Main implements IAppLogic {
         // nothing to be done yet
     }
 
-    private void generateBlocks(Scene scene) {
+    private void generateBlocks(Scene scene, Map<Vector3s, BlockType> blockTypes) {
 
-        // register all block positions
-        List<Vector3s> positions = new ArrayList<>();
-        for (short i = 0; i < 10; i++) {
-            for (short j = 0; j < 10; j++) {
-                for (short k = -9; k < 1; k++) {
-                    Vector3s pos = new Vector3s(i, k, j);
-                    positions.add(pos);
-                    blockMap.put(pos, null); // reserve the position
-                }
-            }
+        // Reserve all positions first (for neighbor checks)
+        for (Vector3s pos : blockTypes.keySet()) {
+            blockMap.put(pos, null);
         }
 
-        // create blocks with neighbor checking
-        BlockType grassType = BlockRegistry.get("grass_block");
-        for (Vector3s pos : positions) {
+        // Create blocks using their respective BlockTypes
+        for (Map.Entry<Vector3s, BlockType> entry : blockTypes.entrySet()) {
+            Vector3s pos = entry.getKey();
+            BlockType type = entry.getValue();
+
             Block block = new Block(
                     scene,
-                    grassType,
-                    pos.x, pos.y, pos.z,
+                    type,
+                    pos.x,
+                    pos.y,
+                    pos.z,
                     p -> blockMap.containsKey(p));
+
             blocks.add(block);
             blockMap.put(pos, block);
         }
+    }
+
+    private void initBlocks(Scene scene) {
+        Map<Vector3s, BlockType> blocks = new HashMap<>();
+
+        // for (int x = 2; x < 12; x++) {
+        // for (int z = 0; z < 10; z++) {
+        // blocks.put(new Vector3s(-x, 0, z), BlockRegistry.get("grass_block"));
+        // blocks.put(new Vector3s(x, 0, z), BlockRegistry.get("cobblestone"));
+        // }
+        // }
+
+        // type 1 all faces same texture
+        // type 2 top bottom faces same texture, all horizontal faces same texture
+        // type 3 top bottom faces same texture, opposite horizontal faces same texture
+        // type 4 all faces different texture
+        String[] blockNames = {
+                "grass_block",
+                "cobblestone",
+                "stone",
+                "oak_log",
+                "oak_plank",
+                "oak_leaves"
+        };
+
+        for (int x = 0; x < blockNames.length; x++) {
+            for (int z = 0; z < 5; z++) {
+                blocks.put(new Vector3s(x, 0, z), BlockRegistry.get(blockNames[x]));
+            }
+        }
+
+        generateBlocks(scene, blocks);
     }
 
 }

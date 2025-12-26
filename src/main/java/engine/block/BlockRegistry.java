@@ -8,6 +8,7 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class BlockRegistry {
 
@@ -72,4 +73,13 @@ public class BlockRegistry {
             e.printStackTrace();
         }
     }
+
+    public static int size() {
+        return REGISTRY.size();
+    }
+
+    public static Set<String> keySet() {
+        return REGISTRY.keySet();
+    }
+
 }

@@ -12,6 +12,12 @@ public class Vector3s {
         this.z = z;
     }
 
+    public Vector3s(int x, int y, int z) {
+        this.x = (short) x;
+        this.y = (short) y;
+        this.z = (short) z;
+    }
+
     public void set(short x, short y, short z) {
         this.x = x;
         this.y = y;
