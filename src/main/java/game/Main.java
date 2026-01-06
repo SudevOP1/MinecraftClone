@@ -139,14 +139,7 @@ public class Main implements IAppLogic {
         // }
         // }
 
-        String[] blockNames = {
-                "grass_block",
-                "cobblestone",
-                "stone",
-                "oak_log",
-                "oak_plank",
-                "oak_leaves"
-        };
+        String[] blockNames = BlockRegistry.keySet().toArray(new String[0]);
 
         for (int x = 0; x < blockNames.length; x++) {
             for (int z = 0; z < 5; z++) {

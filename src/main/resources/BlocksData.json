@@ -35,6 +35,21 @@
       "textureRotation5": 1,
       "textureRotation6": 1
     },
+    "dirt_block": {
+      "name": "Dirt Block",
+      "texture1": 3,
+      "texture2": 3,
+      "texture3": 3,
+      "texture4": 3,
+      "texture5": 3,
+      "texture6": 3,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1
+    },
     "cobblestone": {
       "name": "Cobblestone",
       "texture1": 6,
