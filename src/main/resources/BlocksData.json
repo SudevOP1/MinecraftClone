@@ -1,46 +1,114 @@
 {
-  "blocks": [
-    {
+  "blockLength": 512,
+  "resolution": {
+    "width": 4096,
+    "height": 2048
+  },
+  "blocks": {
+    "default_texture": {
       "name": "Default Texture",
-      "codename": "default_texture",
-      "texturePath": "models/default_texture.png",
-      "type": 1
+      "texture1": 1,
+      "texture2": 1,
+      "texture3": 1,
+      "texture4": 1,
+      "texture5": 1,
+      "texture6": 1,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1
     },
-    {
+    "grass_block": {
       "name": "Grass Block",
-      "codename": "grass_block",
-      "texturePath": "models/grass_block.png",
-      "type": 3
+      "texture1": 4,
+      "texture2": 3,
+      "texture3": 2,
+      "texture4": 2,
+      "texture5": 2,
+      "texture6": 2,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1
     },
-    {
+    "cobblestone": {
       "name": "Cobblestone",
-      "codename": "cobblestone",
-      "texturePath": "models/cobblestone.png",
-      "type": 3
+      "texture1": 6,
+      "texture2": 6,
+      "texture3": 6,
+      "texture4": 6,
+      "texture5": 6,
+      "texture6": 6,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1
     },
-    {
+    "stone": {
       "name": "Stone",
-      "codename": "stone",
-      "texturePath": "models/stone.png",
-      "type": 3
+      "texture1": 5,
+      "texture2": 5,
+      "texture3": 5,
+      "texture4": 5,
+      "texture5": 5,
+      "texture6": 5,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1
     },
-    {
+    "oak_log": {
       "name": "Oak Log",
-      "codename": "oak_log",
-      "texturePath": "models/oak_log.png",
-      "type": 2
+      "texture1": 8,
+      "texture2": 8,
+      "texture3": 7,
+      "texture4": 7,
+      "texture5": 7,
+      "texture6": 7,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1
     },
-    {
+    "oak_plank": {
       "name": "Oak Plank",
-      "codename": "oak_plank",
-      "texturePath": "models/oak_plank.png",
-      "type": 3
+      "texture1": 9,
+      "texture2": 9,
+      "texture3": 9,
+      "texture4": 9,
+      "texture5": 9,
+      "texture6": 9,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1
     },
-    {
+    "oak_leaves": {
       "name": "Oak Leaves",
-      "codename": "oak_leaves",
-      "texturePath": "models/oak_leaves.png",
-      "type": 1
+      "texture1": 10,
+      "texture2": 10,
+      "texture3": 10,
+      "texture4": 10,
+      "texture5": 10,
+      "texture6": 10,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1
     }
-  ]
+  }
 }

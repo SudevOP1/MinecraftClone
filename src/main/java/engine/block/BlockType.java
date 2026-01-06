@@ -4,26 +4,44 @@ public class BlockType {
 
     public String name;
     public String codename;
-    public String texturePath;
+
+    // Texture indices for each face (1-indexed)
+    public int texture1; // top
+    public int texture2; // bottom
+    public int texture3; // front
+    public int texture4; // back
+    public int texture5; // left
+    public int texture6; // right
+
+    // Texture rotations (1=0°, 2=90°, 3=180°, 4=270°)
+    public int textureRotation1; // top
+    public int textureRotation2; // bottom
+    public int textureRotation3; // front
+    public int textureRotation4; // back
+    public int textureRotation5; // left
+    public int textureRotation6; // right
 
     // for GSON
     public BlockType() {
     }
 
-    public BlockType(String name, String codename) {
-        this.name = name;
-        this.codename = codename;
-        this.texturePath = "models/" + codename + ".png";
+    public int[] getTextureIndices() {
+        return new int[] { texture3, texture1, texture6, texture5, texture2, texture4 };
     }
 
-    public BlockType(String name, String codename, String texturePath) {
-        this.name = name;
-        this.codename = codename;
-        this.texturePath = texturePath;
+    public int[] getTextureRotations() {
+        return new int[] {
+                textureRotation3,
+                textureRotation1,
+                textureRotation6,
+                textureRotation5,
+                textureRotation2,
+                textureRotation4
+        };
     }
 
     @Override
     public String toString() {
-        return "BlockType{name='" + name + "', codename='" + codename + "', texturePath='" + texturePath + "'}";
+        return "BlockType{name='" + name + "', codename='" + codename + "'}";
     }
 }

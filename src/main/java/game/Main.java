@@ -139,10 +139,6 @@ public class Main implements IAppLogic {
         // }
         // }
 
-        // type 1 all faces same texture
-        // type 2 top bottom faces same texture, all horizontal faces same texture
-        // type 3 top bottom faces same texture, opposite horizontal faces same texture
-        // type 4 all faces different texture
         String[] blockNames = {
                 "grass_block",
                 "cobblestone",
@@ -154,7 +150,12 @@ public class Main implements IAppLogic {
 
         for (int x = 0; x < blockNames.length; x++) {
             for (int z = 0; z < 5; z++) {
-                blocks.put(new Vector3s(x, 0, z), BlockRegistry.get(blockNames[x]));
+                BlockType blockType = BlockRegistry.get(blockNames[x]);
+                if (blockType != null) {
+                    blocks.put(new Vector3s(2 * x, 0, z), blockType);
+                } else {
+                    System.err.println("[WARNING] BlockType not found: " + blockNames[x]);
+                }
             }
         }
 

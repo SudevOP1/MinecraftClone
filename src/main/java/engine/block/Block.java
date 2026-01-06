@@ -18,112 +18,144 @@ public class Block {
 
         private static int blockCounter = 0;
 
+        // Use 24 unique vertices (4 per face) so each face can have its own
+        // texture coordinates without sharing vertices between faces.
+        // Face order: front, top, right, left, bottom, back (matches BlockType textures)
         private static final float[] POSITIONS = new float[] {
-                // V0
-                -0.5f, 0.5f, 0.5f,
-                // V1
-                -0.5f, -0.5f, 0.5f,
-                // V2
-                0.5f, -0.5f, 0.5f,
-                // V3
-                0.5f, 0.5f, 0.5f,
-                // V4
-                -0.5f, 0.5f, -0.5f,
-                // V5
-                0.5f, 0.5f, -0.5f,
-                // V6
-                -0.5f, -0.5f, -0.5f,
-                // V7
-                0.5f, -0.5f, -0.5f,
+            // Front face (bottom-left, top-left, top-right, bottom-right)
+            -0.5f, -0.5f, 0.5f,
+            -0.5f, 0.5f, 0.5f,
+            0.5f, 0.5f, 0.5f,
+            0.5f, -0.5f, 0.5f,
 
-                // For text coords in top face
-                // V8: V4 repeated
-                -0.5f, 0.5f, -0.5f,
-                // V9: V5 repeated
-                0.5f, 0.5f, -0.5f,
-                // V10: V0 repeated
-                -0.5f, 0.5f, 0.5f,
-                // V11: V3 repeated
-                0.5f, 0.5f, 0.5f,
+            // Top face (bottom-left, top-left, top-right, bottom-right)
+            -0.5f, 0.5f, -0.5f,
+            -0.5f, 0.5f, 0.5f,
+            0.5f, 0.5f, 0.5f,
+            0.5f, 0.5f, -0.5f,
 
-                // For text coords in right face
-                // V12: V3 repeated
-                0.5f, 0.5f, 0.5f,
-                // V13: V2 repeated
-                0.5f, -0.5f, 0.5f,
+            // Right face (bottom-left, top-left, top-right, bottom-right)
+            0.5f, -0.5f, 0.5f,
+            0.5f, 0.5f, 0.5f,
+            0.5f, 0.5f, -0.5f,
+            0.5f, -0.5f, -0.5f,
 
-                // For text coords in left face
-                // V14: V0 repeated
-                -0.5f, 0.5f, 0.5f,
-                // V15: V1 repeated
-                -0.5f, -0.5f, 0.5f,
+            // Left face (bottom-left, top-left, top-right, bottom-right)
+            -0.5f, -0.5f, -0.5f,
+            -0.5f, 0.5f, -0.5f,
+            -0.5f, 0.5f, 0.5f,
+            -0.5f, -0.5f, 0.5f,
 
-                // For text coords in bottom face
-                // V16: V6 repeated
-                -0.5f, -0.5f, -0.5f,
-                // V17: V7 repeated
-                0.5f, -0.5f, -0.5f,
-                // V18: V1 repeated
-                -0.5f, -0.5f, 0.5f,
-                // V19: V2 repeated
-                0.5f, -0.5f, 0.5f,
+            // Bottom face (bottom-left, top-left, top-right, bottom-right)
+            -0.5f, -0.5f, -0.5f,
+            -0.5f, -0.5f, 0.5f,
+            0.5f, -0.5f, 0.5f,
+            0.5f, -0.5f, -0.5f,
+
+            // Back face (bottom-left, top-left, top-right, bottom-right)
+            -0.5f, -0.5f, -0.5f,
+            -0.5f, 0.5f, -0.5f,
+            0.5f, 0.5f, -0.5f,
+            0.5f, -0.5f, -0.5f
         };
 
-        private static final float[] TEXT_COORDS = new float[] {
-                0.0f, 0.0f,
-                0.0f, 0.5f,
-                0.5f, 0.5f,
-                0.5f, 0.0f,
+        // Calculate texture coordinates for a given texture index in the atlas
+        private static float[] getTexCoordsForTexture(int textureIndex, int rotation) {
+            int atlasColumns = BlockRegistry.getAtlasColumns();
+            int atlasRows = BlockRegistry.getAtlasRows();
 
-                0.0f, 0.0f,
-                0.5f, 0.0f,
-                0.0f, 0.5f,
-                0.5f, 0.5f,
+            // Convert 1-indexed to 0-indexed
+            int index = textureIndex - 1;
 
-                // For text coords in top face
-                0.0f, 0.5f,
-                0.5f, 0.5f,
-                0.0f, 1.0f,
-                0.5f, 1.0f,
+            // Calculate position in atlas
+            int col = index % atlasColumns;
+            int row = index / atlasColumns;
 
-                // For text coords in right face
-                0.0f, 0.0f,
-                0.0f, 0.5f,
+            // Calculate UV coordinates
+            float u0 = (float) col / atlasColumns;
+            float v0 = (float) row / atlasRows;
+            float u1 = (float) (col + 1) / atlasColumns;
+            float v1 = (float) (row + 1) / atlasRows;
 
-                // For text coords in left face
-                0.5f, 0.0f,
-                0.5f, 0.5f,
+            // Apply rotation (1=0°, 2=90°, 3=180°, 4=270°)
+            // Base coords: bottom-left, top-left, top-right, bottom-right
+            float[][] rotatedCoords = new float[4][2];
 
-                // For text coords in bottom face
-                0.5f, 0.0f,
-                1.0f, 0.0f,
-                0.5f, 0.5f,
-                1.0f, 0.5f,
-        };
+            switch (rotation) {
+                case 1: // 0°
+                    rotatedCoords[0] = new float[] { u0, v1 }; // bottom-left
+                    rotatedCoords[1] = new float[] { u0, v0 }; // top-left
+                    rotatedCoords[2] = new float[] { u1, v0 }; // top-right
+                    rotatedCoords[3] = new float[] { u1, v1 }; // bottom-right
+                    break;
+                case 2: // 90° clockwise
+                    rotatedCoords[0] = new float[] { u0, v0 }; // top-left -> bottom-left
+                    rotatedCoords[1] = new float[] { u1, v0 }; // top-right -> top-left
+                    rotatedCoords[2] = new float[] { u1, v1 }; // bottom-right -> top-right
+                    rotatedCoords[3] = new float[] { u0, v1 }; // bottom-left -> bottom-right
+                    break;
+                case 3: // 180°
+                    rotatedCoords[0] = new float[] { u1, v0 }; // top-right -> bottom-left
+                    rotatedCoords[1] = new float[] { u1, v1 }; // bottom-right -> top-left
+                    rotatedCoords[2] = new float[] { u0, v1 }; // bottom-left -> top-right
+                    rotatedCoords[3] = new float[] { u0, v0 }; // top-left -> bottom-right
+                    break;
+                case 4: // 270° clockwise
+                    rotatedCoords[0] = new float[] { u1, v1 }; // bottom-right -> bottom-left
+                    rotatedCoords[1] = new float[] { u0, v1 }; // bottom-left -> top-left
+                    rotatedCoords[2] = new float[] { u0, v0 }; // top-left -> top-right
+                    rotatedCoords[3] = new float[] { u1, v0 }; // top-right -> bottom-right
+                    break;
+                default:
+                    rotatedCoords[0] = new float[] { u0, v1 };
+                    rotatedCoords[1] = new float[] { u0, v0 };
+                    rotatedCoords[2] = new float[] { u1, v0 };
+                    rotatedCoords[3] = new float[] { u1, v1 };
+                    break;
+            }
 
-        private static final int[][] FACE_INDICES = new int[][] {
-                // Front face
-                { 0, 1, 3, 3, 1, 2 },
-                // Top Face
-                { 8, 10, 11, 9, 8, 11 },
-                // Right face
-                { 12, 13, 7, 5, 12, 7 },
-                // Left face
-                { 14, 15, 6, 4, 14, 6 },
-                // Bottom face
-                { 16, 18, 19, 17, 16, 19 },
-                // Back face
-                { 4, 6, 7, 5, 4, 7 }
-        };
+            return new float[] {
+                    rotatedCoords[0][0], rotatedCoords[0][1],
+                    rotatedCoords[1][0], rotatedCoords[1][1],
+                    rotatedCoords[2][0], rotatedCoords[2][1],
+                    rotatedCoords[3][0], rotatedCoords[3][1]
+            };
+        }
+
+        private static float[] buildTextureCoords(BlockType type) {
+            int[] textures = type.getTextureIndices();
+            int[] rotations = type.getTextureRotations();
+
+            List<Float> texCoords = new ArrayList<>();
+            // Append texture coords per-face in the same order as POSITIONS.
+            // BlockType.getTextureIndices() returns [front, top, right, left, bottom, back]
+            for (int face = 0; face < 6; face++) {
+                float[] coords = getTexCoordsForTexture(textures[face], rotations[face]);
+                for (float c : coords) {
+                    texCoords.add(c);
+                }
+            }
+
+            float[] result = new float[texCoords.size()];
+            for (int i = 0; i < texCoords.size(); i++) {
+                result[i] = texCoords.get(i);
+            }
+            return result;
+        }
 
         private static int[] buildIndices(boolean[] visibleFaces) {
             List<Integer> indices = new ArrayList<>();
-            for (int i = 0; i < 6; i++) {
-                if (visibleFaces[i]) {
-                    for (int index : FACE_INDICES[i]) {
-                        indices.add(index);
-                    }
-                }
+            // Each face uses 4 consecutive vertices in POSITIONS: base = face*4
+            for (int face = 0; face < 6; face++) {
+                if (!visibleFaces[face]) continue;
+                int b = face * 4;
+                // two triangles: (b, b+1, b+3) and (b+3, b+1, b+2)
+                indices.add(b);
+                indices.add(b + 1);
+                indices.add(b + 3);
+                indices.add(b + 3);
+                indices.add(b + 1);
+                indices.add(b + 2);
             }
             int[] result = new int[indices.size()];
             for (int i = 0; i < indices.size(); i++) {
@@ -133,7 +165,12 @@ public class Block {
         }
     }
 
-    public Block(Scene scene, BlockType type, short x, short y, short z,
+    public Block(
+            Scene scene,
+            BlockType type,
+            short x,
+            short y,
+            short z,
             Function<Vector3s, Boolean> hasNeighbor) {
 
         this.position = new Vector3s(x, y, z);
@@ -141,25 +178,28 @@ public class Block {
 
         // Check which faces are visible (no neighbor blocking them)
         boolean[] visibleFaces = new boolean[6];
-        visibleFaces[0] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z + 1)));
-        visibleFaces[1] = !hasNeighbor.apply(new Vector3s(x, (short) (y + 1), z));
-        visibleFaces[2] = !hasNeighbor.apply(new Vector3s((short) (x + 1), y, z));
-        visibleFaces[3] = !hasNeighbor.apply(new Vector3s((short) (x - 1), y, z));
-        visibleFaces[4] = !hasNeighbor.apply(new Vector3s(x, (short) (y - 1), z));
-        visibleFaces[5] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z - 1)));
+        visibleFaces[0] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z + 1))); // front
+        visibleFaces[1] = !hasNeighbor.apply(new Vector3s(x, (short) (y + 1), z)); // top
+        visibleFaces[2] = !hasNeighbor.apply(new Vector3s((short) (x + 1), y, z)); // right
+        visibleFaces[3] = !hasNeighbor.apply(new Vector3s((short) (x - 1), y, z)); // left
+        visibleFaces[4] = !hasNeighbor.apply(new Vector3s(x, (short) (y - 1), z)); // bottom
+        visibleFaces[5] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z - 1))); // back
 
-        // load texture
-        this.texture = scene.getTextureCache().createTexture(type.texturePath);
+        // load texture (now using the texture atlas)
+        this.texture = scene.getTextureCache().createTexture("texture_map.png");
 
         // create material
         Material material = new Material();
-        material.setTexturePath(type.texturePath);
+        material.setTexturePath("texture_map.png");
         List<Material> materialList = new ArrayList<>();
         materialList.add(material);
 
+        // Build texture coordinates based on BlockType
+        float[] textureCoords = Helpers.buildTextureCoords(type);
+
         // create mesh with only visible faces
         int[] indices = Helpers.buildIndices(visibleFaces);
-        Mesh mesh = new Mesh(Helpers.POSITIONS, Helpers.TEXT_COORDS, indices);
+        Mesh mesh = new Mesh(Helpers.POSITIONS, textureCoords, indices);
         material.getMeshList().add(mesh);
 
         // create model
