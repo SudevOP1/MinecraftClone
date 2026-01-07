@@ -5,7 +5,7 @@ public class BlockType {
     public String name;
     public String codename;
 
-    // Texture indices for each face (1-indexed)
+    // texture indices for each face (indexed starting from 1)
     public int texture1; // top
     public int texture2; // bottom
     public int texture3; // front
@@ -13,13 +13,16 @@ public class BlockType {
     public int texture5; // left
     public int texture6; // right
 
-    // Texture rotations (1=0°, 2=90°, 3=180°, 4=270°)
+    // texture rotations (1=0°, 2=90°, 3=180°, 4=270°)
     public int textureRotation1; // top
     public int textureRotation2; // bottom
     public int textureRotation3; // front
     public int textureRotation4; // back
     public int textureRotation5; // left
     public int textureRotation6; // right
+
+    // transparency
+    public boolean hasTransparency;
 
     // for GSON
     public BlockType() {

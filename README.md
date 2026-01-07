@@ -30,6 +30,15 @@ mvn exec:java
 
 ## Notes for Developers
 
+### Coordinate System
+
+The engine uses a right-handed 3D coordinate system with the following axis orientation:
+| Axis | Direction |
+| ---- | ----------------- |
+| `+X` | Rightwards |
+| `+Y` | Upwards |
+| `+Z` | Out of the screen (towards user) |
+
 ### Texture Atlas System
 
 The game uses a **texture atlas** system where all block textures are combined into a single image file (`texture_map.png`). This improves performance by reducing texture switching during rendering.

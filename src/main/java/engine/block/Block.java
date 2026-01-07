@@ -13,6 +13,7 @@ public class Block {
     private Texture texture;
     private Entity entity;
     private String blockId;
+    private final BlockType type;
 
     private static class Helpers {
 
@@ -20,43 +21,44 @@ public class Block {
 
         // Use 24 unique vertices (4 per face) so each face can have its own
         // texture coordinates without sharing vertices between faces.
-        // Face order: front, top, right, left, bottom, back (matches BlockType textures)
+        // Face order: front, top, right, left, bottom, back (matches BlockType
+        // textures)
         private static final float[] POSITIONS = new float[] {
-            // Front face (bottom-left, top-left, top-right, bottom-right)
-            -0.5f, -0.5f, 0.5f,
-            -0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
+                // Front face (bottom-left, top-left, top-right, bottom-right)
+                -0.5f, -0.5f, 0.5f,
+                -0.5f, 0.5f, 0.5f,
+                0.5f, 0.5f, 0.5f,
+                0.5f, -0.5f, 0.5f,
 
-            // Top face (bottom-left, top-left, top-right, bottom-right)
-            -0.5f, 0.5f, -0.5f,
-            -0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, -0.5f,
+                // Top face (bottom-left, top-left, top-right, bottom-right)
+                -0.5f, 0.5f, -0.5f,
+                -0.5f, 0.5f, 0.5f,
+                0.5f, 0.5f, 0.5f,
+                0.5f, 0.5f, -0.5f,
 
-            // Right face (bottom-left, top-left, top-right, bottom-right)
-            0.5f, -0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
+                // Right face (bottom-left, top-left, top-right, bottom-right)
+                0.5f, -0.5f, 0.5f,
+                0.5f, 0.5f, 0.5f,
+                0.5f, 0.5f, -0.5f,
+                0.5f, -0.5f, -0.5f,
 
-            // Left face (bottom-left, top-left, top-right, bottom-right)
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, 0.5f, -0.5f,
-            -0.5f, 0.5f, 0.5f,
-            -0.5f, -0.5f, 0.5f,
+                // Left face (bottom-left, top-left, top-right, bottom-right)
+                -0.5f, -0.5f, -0.5f,
+                -0.5f, 0.5f, -0.5f,
+                -0.5f, 0.5f, 0.5f,
+                -0.5f, -0.5f, 0.5f,
 
-            // Bottom face (bottom-left, top-left, top-right, bottom-right)
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, -0.5f,
+                // Bottom face (bottom-left, top-left, top-right, bottom-right)
+                -0.5f, -0.5f, -0.5f,
+                -0.5f, -0.5f, 0.5f,
+                0.5f, -0.5f, 0.5f,
+                0.5f, -0.5f, -0.5f,
 
-            // Back face (bottom-left, top-left, top-right, bottom-right)
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, 0.5f, -0.5f,
-            0.5f, 0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f
+                // Back face (bottom-left, top-left, top-right, bottom-right)
+                -0.5f, -0.5f, -0.5f,
+                -0.5f, 0.5f, -0.5f,
+                0.5f, 0.5f, -0.5f,
+                0.5f, -0.5f, -0.5f
         };
 
         // Calculate texture coordinates for a given texture index in the atlas
@@ -147,7 +149,8 @@ public class Block {
             List<Integer> indices = new ArrayList<>();
             // Each face uses 4 consecutive vertices in POSITIONS: base = face*4
             for (int face = 0; face < 6; face++) {
-                if (!visibleFaces[face]) continue;
+                if (!visibleFaces[face])
+                    continue;
                 int b = face * 4;
                 // two triangles: (b, b+1, b+3) and (b+3, b+1, b+2)
                 indices.add(b);
@@ -171,19 +174,28 @@ public class Block {
             short x,
             short y,
             short z,
-            Function<Vector3s, Boolean> hasNeighbor) {
+            Function<Vector3s, BlockType> getNeighborType) {
 
         this.position = new Vector3s(x, y, z);
         this.blockId = type.codename + "-" + Helpers.blockCounter++;
+        this.type = type;
 
-        // Check which faces are visible (no neighbor blocking them)
+        // check which faces are visible if block is not transparent and render the face
+        // if neighbor is transparent
         boolean[] visibleFaces = new boolean[6];
-        visibleFaces[0] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z + 1))); // front
-        visibleFaces[1] = !hasNeighbor.apply(new Vector3s(x, (short) (y + 1), z)); // top
-        visibleFaces[2] = !hasNeighbor.apply(new Vector3s((short) (x + 1), y, z)); // right
-        visibleFaces[3] = !hasNeighbor.apply(new Vector3s((short) (x - 1), y, z)); // left
-        visibleFaces[4] = !hasNeighbor.apply(new Vector3s(x, (short) (y - 1), z)); // bottom
-        visibleFaces[5] = !hasNeighbor.apply(new Vector3s(x, y, (short) (z - 1))); // back
+        Vector3s[] neighbors = new Vector3s[] {
+                new Vector3s(x, y, (short) (z + 1)), // front
+                new Vector3s(x, (short) (y + 1), z), // top
+                new Vector3s((short) (x + 1), y, z), // right
+                new Vector3s((short) (x - 1), y, z), // left
+                new Vector3s(x, (short) (y - 1), z), // bottom
+                new Vector3s(x, y, (short) (z - 1)), // back
+        };
+
+        for (int i = 0; i < 6; i++) {
+            BlockType neighborType = getNeighborType.apply(neighbors[i]);
+            visibleFaces[i] = neighborType == null || neighborType.hasTransparency;
+        }
 
         // load texture (now using the texture atlas)
         this.texture = scene.getTextureCache().createTexture("texture_map.png");
@@ -191,6 +203,12 @@ public class Block {
         // create material
         Material material = new Material();
         material.setTexturePath("texture_map.png");
+
+        // Enable transparency for blocks that need it
+        if (type.hasTransparency) {
+            material.setTransparent(true);
+        }
+
         List<Material> materialList = new ArrayList<>();
         materialList.add(material);
 
@@ -237,6 +255,10 @@ public class Block {
 
     public String getBlockId() {
         return this.blockId;
+    }
+
+    public BlockType getBlockType() {
+        return this.type;
     }
 
     public void setScale(float scale) {

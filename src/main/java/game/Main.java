@@ -122,7 +122,7 @@ public class Main implements IAppLogic {
                     pos.x,
                     pos.y,
                     pos.z,
-                    p -> blockMap.containsKey(p));
+                    p -> blockTypes.get(p));
 
             blocks.add(block);
             blockMap.put(pos, block);
@@ -132,6 +132,7 @@ public class Main implements IAppLogic {
     private void initBlocks(Scene scene) {
         Map<Vector3s, BlockType> blocks = new HashMap<>();
 
+        // // testing two block types
         // for (int x = 2; x < 12; x++) {
         // for (int z = 0; z < 10; z++) {
         // blocks.put(new Vector3s(-x, 0, z), BlockRegistry.get("grass_block"));
@@ -139,16 +140,21 @@ public class Main implements IAppLogic {
         // }
         // }
 
-        String[] blockNames = BlockRegistry.keySet().toArray(new String[0]);
+        // // testing all block types
+        // String[] blockNames = BlockRegistry.keySet().toArray(new String[0]);
+        // for (int x = 0; x < blockNames.length; x++) {
+        // for (int z = 0; z < 5; z++) {
+        // BlockType blockType = BlockRegistry.get(blockNames[x]);
+        // blocks.put(new Vector3s(2 * x, 0, z), blockType);
+        // }
+        // }
 
-        for (int x = 0; x < blockNames.length; x++) {
-            for (int z = 0; z < 5; z++) {
-                BlockType blockType = BlockRegistry.get(blockNames[x]);
-                if (blockType != null) {
-                    blocks.put(new Vector3s(2 * x, 0, z), blockType);
-                } else {
-                    System.err.println("[WARNING] BlockType not found: " + blockNames[x]);
-                }
+        // tree simulation
+        Map<Vector3s, BlockType> treeBlocks = StructureHelpers.getTreeBlocks(2, 1, 2);
+        blocks.putAll(treeBlocks);
+        for (int x = 0; x <= 4; x++) {
+            for (int z = 0; z <= 4; z++) {
+                blocks.put(new Vector3s(x, 0, z), BlockRegistry.get("grass_block"));
             }
         }
 

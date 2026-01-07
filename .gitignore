@@ -20,3 +20,6 @@ pom.xml.versionsBackup
 
 # screenshots (press F2)
 screenshots/
+
+# tests
+tests/

@@ -6,9 +6,11 @@ public class Material {
 
     private List<Mesh> meshList;
     private String texturePath;
+    private boolean transparent;
 
     public Material() {
         meshList = new ArrayList<>();
+        transparent = false; // default
     }
 
     public List<Mesh> getMeshList() {
@@ -21,6 +23,14 @@ public class Material {
 
     public void setTexturePath(String texturePath) {
         this.texturePath = texturePath;
+    }
+
+    public boolean isTransparent() {
+        return transparent;
+    }
+
+    public void setTransparent(boolean transparent) {
+        this.transparent = transparent;
     }
 
     public void cleanup() {
