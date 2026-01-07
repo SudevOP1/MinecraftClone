@@ -78,7 +78,12 @@ Row 4: [25] [26] [27] [28] [29] [30] [31] [32]
     "block_codename": {
       "name": "Display Name",
       "texture1": 1,
+      "texture2": 1,
       ...
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      ...
+      "hasTransparency": false // Whether block has transparent parts or not
     }
   }
 }
@@ -103,6 +108,7 @@ Each block in the `blocks` object has the following properties:
 | `textureRotation4` | integer | Rotation for back face (1-4)              |
 | `textureRotation5` | integer | Rotation for left face (1-4)              |
 | `textureRotation6` | integer | Rotation for right face (1-4)             |
+| `hasTransparency`  | boolean | Whether the block has transparent parts   |
 
 | Value | Rotation       |
 | ----- | -------------- |
