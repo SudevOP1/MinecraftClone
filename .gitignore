@@ -19,7 +19,7 @@ pom.xml.versionsBackup
 *.log
 
 # screenshots (press F2)
-screenshots/
+ss/
 
 # tests
 tests/

@@ -1,164 +1,36 @@
 package game;
 
-import engine.Engine;
-import engine.Window;
-import engine.graph.Render;
-import engine.scene.Scene;
-import engine.scene.Camera;
-import engine.block.Block;
-import engine.block.BlockRegistry;
-import engine.block.BlockType;
-import engine.IAppLogic;
-import engine.MouseInput;
-import data_structures.Vector3s;
+import java.util.Random;
+import java.util.Scanner;
 
-import org.joml.*;
-import java.util.*;
-import static org.lwjgl.glfw.GLFW.*;
+import engine.world.World;
 
-public class Main implements IAppLogic {
-
-    private List<Block> blocks;
-    private Map<Vector3s, Block> blockMap;
-    private boolean f3Pressed = false;
-    private boolean f2Pressed = false;
-
-    public static final float MOUSE_SENSITIVITY = 0.1f;
-    public static final float MOVEMENT_SPEED = 0.005f;
+public class Main {
 
     public static void main(String[] args) {
-        Main main = new Main();
-        Engine gameEng = new Engine("MinecraftClone", new Window.WindowOptions(), main, 0, 2, 0);
-        gameEng.start();
-    }
 
-    @Override
-    public void init(Window window, Scene scene, Render render) {
-        blocks = new ArrayList<>();
-        blockMap = new HashMap<>();
+        Scanner sc = new Scanner(System.in);
+        String worldName, seedInput;
+        int seed;
 
-        this.initBlocks(scene);
-    }
+        System.out.print("Enter world name: ");
+        worldName = sc.nextLine();
 
-    @Override
-    public void input(Window window, Scene scene, long diffTimeMillis, Render render) {
+        System.out.print("Enter seed: ");
+        seedInput = sc.nextLine();
 
-        float move = diffTimeMillis * MOVEMENT_SPEED;
-        Camera camera = scene.getCamera();
-
-        // WASD, space, shift movement
-        if (window.isKeyPressed(GLFW_KEY_W)) {
-            camera.moveForward(move);
+        if (worldName.isEmpty()) {
+            worldName = "New World";
         }
-        if (window.isKeyPressed(GLFW_KEY_S)) {
-            camera.moveForward(-move);
-        }
-        if (window.isKeyPressed(GLFW_KEY_A)) {
-            camera.moveLeft(move);
-        }
-        if (window.isKeyPressed(GLFW_KEY_D)) {
-            camera.moveRight(move);
-        }
-        if (window.isKeyPressed(GLFW_KEY_SPACE)) {
-            camera.moveUp(move);
-        }
-        if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
-            camera.moveUp(-move);
-        }
-
-        // F2 to take screenshot
-        if (window.isKeyPressed(GLFW_KEY_F2)) {
-            if (!f2Pressed) {
-                render.takeScreenshot(window);
-                f2Pressed = true;
-            }
+        if (seedInput.isEmpty()) {
+            seed = new Random().nextInt();
         } else {
-            f2Pressed = false;
+            seed = Integer.parseInt(seedInput);
         }
 
-        // F3 to toggle wireframe mode
-        if (window.isKeyPressed(GLFW_KEY_F3)) {
-            if (!f3Pressed) {
-                render.toggleWireframe();
-                f3Pressed = true;
-            }
-        } else {
-            f3Pressed = false;
-        }
-
-        // looking around using mouse
-        MouseInput mouseInput = window.getMouseInput();
-        Vector2f displVec = mouseInput.getDisplVec();
-        camera.addRotation(
-                -(float) java.lang.Math.toRadians(displVec.x * MOUSE_SENSITIVITY),
-                -(float) java.lang.Math.toRadians(displVec.y * MOUSE_SENSITIVITY),
-                0);
-    }
-
-    @Override
-    public void update(Window window, Scene scene, long diffTimeMillis) {
-    }
-
-    @Override
-    public void cleanup() {
-        // nothing to be done yet
-    }
-
-    private void generateBlocks(Scene scene, Map<Vector3s, BlockType> blockTypes) {
-
-        // Reserve all positions first (for neighbor checks)
-        for (Vector3s pos : blockTypes.keySet()) {
-            blockMap.put(pos, null);
-        }
-
-        // Create blocks using their respective BlockTypes
-        for (Map.Entry<Vector3s, BlockType> entry : blockTypes.entrySet()) {
-            Vector3s pos = entry.getKey();
-            BlockType type = entry.getValue();
-
-            Block block = new Block(
-                    scene,
-                    type,
-                    pos.x,
-                    pos.y,
-                    pos.z,
-                    p -> blockTypes.get(p));
-
-            blocks.add(block);
-            blockMap.put(pos, block);
-        }
-    }
-
-    private void initBlocks(Scene scene) {
-        Map<Vector3s, BlockType> blocks = new HashMap<>();
-
-        // // testing two block types
-        // for (int x = 2; x < 12; x++) {
-        // for (int z = 0; z < 10; z++) {
-        // blocks.put(new Vector3s(-x, 0, z), BlockRegistry.get("grass_block"));
-        // blocks.put(new Vector3s(x, 0, z), BlockRegistry.get("cobblestone"));
-        // }
-        // }
-
-        // // testing all block types
-        // String[] blockNames = BlockRegistry.keySet().toArray(new String[0]);
-        // for (int x = 0; x < blockNames.length; x++) {
-        // for (int z = 0; z < 5; z++) {
-        // BlockType blockType = BlockRegistry.get(blockNames[x]);
-        // blocks.put(new Vector3s(2 * x, 0, z), blockType);
-        // }
-        // }
-
-        // tree simulation
-        Map<Vector3s, BlockType> treeBlocks = StructureHelpers.getTreeBlocks(2, 1, 2);
-        blocks.putAll(treeBlocks);
-        for (int x = 0; x <= 4; x++) {
-            for (int z = 0; z <= 4; z++) {
-                blocks.put(new Vector3s(x, 0, z), BlockRegistry.get("grass_block"));
-            }
-        }
-
-        generateBlocks(scene, blocks);
+        World world = new World(seed, worldName);
+        world.run();
+        sc.close();
     }
 
 }

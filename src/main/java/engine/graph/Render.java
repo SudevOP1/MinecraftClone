@@ -1,12 +1,5 @@
 package engine.graph;
 
-import engine.Window;
-import engine.scene.Scene;
-
-import org.lwjgl.opengl.GL;
-import org.lwjgl.system.MemoryUtil;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +7,30 @@ import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static org.lwjgl.opengl.GL11.*;
+import javax.imageio.ImageIO;
+
+import org.lwjgl.opengl.GL;
+import static org.lwjgl.opengl.GL11.GL_BLEND;
+import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
+import static org.lwjgl.opengl.GL11.GL_FILL;
+import static org.lwjgl.opengl.GL11.GL_FRONT_AND_BACK;
+import static org.lwjgl.opengl.GL11.GL_LINE;
+import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_RGBA;
+import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL11.glBlendFunc;
+import static org.lwjgl.opengl.GL11.glClear;
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL11.glPolygonMode;
+import static org.lwjgl.opengl.GL11.glReadPixels;
+import static org.lwjgl.opengl.GL11.glViewport;
+import org.lwjgl.system.MemoryUtil;
+
+import engine.Window;
+import engine.scene.Scene;
 
 public class Render {
 
@@ -91,7 +107,7 @@ public class Render {
 
             // generate filename with timestamp
             String timestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
-            String filename = "screenshots/screenshot_" + timestamp + ".png";
+            String filename = "ss/screenshot_" + timestamp + ".png";
             File outputFile = new File(filename);
 
             // save image
