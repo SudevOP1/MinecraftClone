@@ -1,14 +1,17 @@
 package engine.block;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+
+import utils.Debug;
 
 public class BlockRegistry {
 
@@ -50,7 +53,7 @@ public class BlockRegistry {
             InputStream is = BlockRegistry.class.getClassLoader().getResourceAsStream(filename);
 
             if (is == null) {
-                System.err.println("[ERROR] " + filename + " not found in classpath");
+                Debug.errln("File " + filename + " not found in classpath");
                 return;
             }
 
@@ -63,7 +66,7 @@ public class BlockRegistry {
             JsonObject root = gson.fromJson(reader, JsonObject.class);
 
             if (root == null) {
-                System.err.println("[ERROR] GSON returned null, JSON format may be invalid");
+                Debug.errln("Invalid JSON format in " + filename);
                 reader.close();
                 return;
             }
@@ -81,7 +84,7 @@ public class BlockRegistry {
 
             // Read blocks
             if (!root.has("blocks")) {
-                System.err.println("[ERROR] 'blocks' field not found in JSON");
+                Debug.errln("'blocks' field not found in JSON");
                 reader.close();
                 return;
             }
@@ -93,7 +96,7 @@ public class BlockRegistry {
                 BlockType block = gson.fromJson(blockData, BlockType.class);
 
                 if (block == null) {
-                    System.err.println("[WARNING] skipping null block: " + codename);
+                    Debug.logln("Skipping null block: " + codename);
                     continue;
                 }
 
@@ -103,11 +106,11 @@ public class BlockRegistry {
 
             reader.close();
 
-            System.out.println("[INFO] Loaded " + REGISTRY.size() + " blocks from " + filename);
-            System.out.println("[INFO] Atlas: " + atlasWidth + "x" + atlasHeight + ", Block size: " + blockLength);
+            Debug.logln("Loaded " + REGISTRY.size() + " blocks from " + filename);
+            Debug.logln("Atlas: " + atlasWidth + "x" + atlasHeight + ", Block size: " + blockLength);
 
         } catch (Exception e) {
-            System.err.println("[ERROR] Failed to load " + filename + ":");
+            Debug.errln("Failed to load " + filename + ":");
             e.printStackTrace();
         }
     }

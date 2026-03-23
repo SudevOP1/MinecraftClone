@@ -31,6 +31,7 @@ import org.lwjgl.system.MemoryUtil;
 
 import engine.Window;
 import engine.scene.Scene;
+import utils.Debug;
 
 public class Render {
 
@@ -112,11 +113,10 @@ public class Render {
 
             // save image
             ImageIO.write(image, "PNG", outputFile);
-            System.out.println("[DEBUG] Screenshot saved: " + filename);
+            Debug.logln("Screenshot saved: " + filename);
 
         } catch (IOException e) {
-            System.err.println("[ERROR] Failed to save screenshot: " + e.getMessage());
-            e.printStackTrace();
+            Debug.errln("Failed to save screenshot: " + e.getMessage());
         } finally {
             // free the heap-allocated buffer
             MemoryUtil.memFree(buffer);

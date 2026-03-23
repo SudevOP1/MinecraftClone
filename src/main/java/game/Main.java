@@ -4,6 +4,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 import engine.world.World;
+import utils.Debug;
 
 public class Main {
 
@@ -13,10 +14,10 @@ public class Main {
         String worldName, seedInput;
         int seed;
 
-        System.out.print("Enter world name: ");
+        Debug.print("Enter world name: ");
         worldName = sc.nextLine();
 
-        System.out.print("Enter seed: ");
+        Debug.print("Enter seed: ");
         seedInput = sc.nextLine();
 
         if (worldName.isEmpty()) {
