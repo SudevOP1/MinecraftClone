@@ -44,7 +44,6 @@ public class World implements IAppLogic {
 
     private long blockBreakingStartTime = 0;
     private long lastBlockBreakTime = 0;
-    private static final long BREAK_COOLDOWN_MS = 200;
     private Vector3s breakingTargetBlock;
     private engine.block.Block[] destroyOverlays = new engine.block.Block[10];
     private Vector3s targetBlock;
@@ -188,7 +187,11 @@ public class World implements IAppLogic {
 
         // block breaking
         long timeSinceLastBreak = System.currentTimeMillis() - this.lastBlockBreakTime;
-        if (this.gameMode.canBreakBlocks() && mouseInput.isLeftButtonPressed() && this.targetBlock != null && timeSinceLastBreak > BREAK_COOLDOWN_MS) {
+        if (this.gameMode.canBreakBlocks() && mouseInput.isLeftButtonPressed() && this.targetBlock != null) {
+            // Check cooldown only for creative mode (instant breaking) to prevent accidental chain-breaks
+            if (this.gameMode.canBreakBlocksInstantly() && timeSinceLastBreak <= Settings.BREAK_COOLDOWN_MS) {
+                return;
+            }
 
             // reset breaking state if target changed
             if (this.breakingBlock && !this.targetBlock.equals(this.breakingTargetBlock)) {
@@ -205,10 +208,10 @@ public class World implements IAppLogic {
                     this.blockBreakingStartTime = System.currentTimeMillis();
                 }
             } else if (!this.gameMode.canBreakBlocksInstantly()) {
-                engine.block.BlockType type = getBlockAt(this.breakingTargetBlock.x, this.breakingTargetBlock.y, this.breakingTargetBlock.z);
-                if (type != null && type.hardness >= 0) {
+                engine.block.BlockType breakingBlockType = getBlockAt(this.breakingTargetBlock.x, this.breakingTargetBlock.y, this.breakingTargetBlock.z);
+                if (breakingBlockType != null && breakingBlockType.hardness >= 0) {
                     long elapsed = System.currentTimeMillis() - this.blockBreakingStartTime;
-                    float totalTime = type.hardness * 1000f;
+                    float totalTime = breakingBlockType.hardness * 1000f;
 
                     if (elapsed >= totalTime) {
                         this.breakBlock(this.breakingTargetBlock);
@@ -222,7 +225,21 @@ public class World implements IAppLogic {
                         if (stage > 9) {
                             stage = 9;
                         }
-                        this.destroyOverlays[stage].setPosition(this.breakingTargetBlock);
+
+                        // Offset by -0.01 on all axes to center the 1.02 scaling around the block
+                        float offset = -0.01f;
+                        this.destroyOverlays[stage].setPosition(
+                                (short) this.breakingTargetBlock.x,
+                                (short) this.breakingTargetBlock.y,
+                                (short) this.breakingTargetBlock.z
+                        );
+                        // Manually overriding the entity position to add the sub-block offset
+                        this.destroyOverlays[stage].getEntity().setPosition(
+                                this.breakingTargetBlock.x + offset,
+                                this.breakingTargetBlock.y + offset,
+                                this.breakingTargetBlock.z + offset
+                        );
+                        this.destroyOverlays[stage].getEntity().updateModelMatrix();
                     }
                 }
             }
