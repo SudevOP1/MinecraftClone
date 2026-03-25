@@ -1,4 +1,4 @@
-package engine.block;
+package engine.item;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,23 +13,23 @@ import com.google.gson.JsonObject;
 
 import utils.Debug;
 
-public class BlockRegistry {
+public class ItemRegistery {
 
-    private static final Map<String, BlockType> REGISTRY = new HashMap<>();
-    private static int blockLength = 512;
-    private static int atlasWidth = 4096;
-    private static int atlasHeight = 2048;
+    private static final Map<String, ItemType> REGISTRY = new HashMap<>();
+    private static int itemLength = 256;
+    private static int atlasWidth = 2048;
+    private static int atlasHeight = 512;
 
     static {
-        loadFromJson("blocks_data.json");
+        loadFromJson("items_data.json");
     }
 
-    public static BlockType get(String codename) {
+    public static ItemType get(String codename) {
         return REGISTRY.get(codename);
     }
 
-    public static int getBlockLength() {
-        return blockLength;
+    public static int getItemLength() {
+        return itemLength;
     }
 
     public static int getAtlasWidth() {
@@ -41,16 +41,16 @@ public class BlockRegistry {
     }
 
     public static int getAtlasColumns() {
-        return atlasWidth / blockLength;
+        return atlasWidth / itemLength;
     }
 
     public static int getAtlasRows() {
-        return atlasHeight / blockLength;
+        return atlasHeight / itemLength;
     }
 
     private static void loadFromJson(String filename) {
         try {
-            InputStream is = BlockRegistry.class.getClassLoader().getResourceAsStream(filename);
+            InputStream is = ItemRegistery.class.getClassLoader().getResourceAsStream(filename);
 
             if (is == null) {
                 Debug.errln("File " + filename + " not found in classpath");
@@ -72,8 +72,8 @@ public class BlockRegistry {
             }
 
             // Read metadata
-            if (root.has("blockLength")) {
-                blockLength = root.get("blockLength").getAsInt();
+            if (root.has("itemLength")) {
+                itemLength = root.get("itemLength").getAsInt();
             }
 
             if (root.has("resolution")) {
@@ -82,34 +82,31 @@ public class BlockRegistry {
                 atlasHeight = resolution.get("height").getAsInt();
             }
 
-            // Read blocks
-            if (!root.has("blocks")) {
-                Debug.errln("'blocks' field not found in JSON");
+            // Read items
+            if (!root.has("icons")) {
+                Debug.errln("'icons' field not found in JSON");
                 reader.close();
                 return;
             }
 
-            JsonObject blocksObj = root.getAsJsonObject("blocks");
+            JsonObject iconsObj = root.getAsJsonObject("icons");
 
-            for (String codename : blocksObj.keySet()) {
-                JsonObject blockData = blocksObj.getAsJsonObject(codename);
-                BlockType block = gson.fromJson(blockData, BlockType.class);
+            for (String codename : iconsObj.keySet()) {
+                JsonObject iconData = iconsObj.getAsJsonObject(codename);
+                ItemType icon = gson.fromJson(iconData, ItemType.class);
 
-                if (block == null) {
-                    Debug.logln("Skipping null block: " + codename);
+                if (icon == null) {
+                    Debug.logln("Skipping null icon: " + codename);
                     continue;
                 }
 
-                block.codename = codename;
-                if (block.texture != null) {
-                    block.texture1 = block.texture2 = block.texture3 = block.texture4 = block.texture5 = block.texture6 = block.texture;
-                }
-                REGISTRY.put(codename, block);
+                icon.codename = codename;
+                REGISTRY.put(codename, icon);
             }
 
             reader.close();
 
-            Debug.logln("Loaded " + REGISTRY.size() + " blocks from " + filename);
+            Debug.logln("Loaded " + REGISTRY.size() + " icons from " + filename);
 
         } catch (Exception e) {
             Debug.errln("Failed to load " + filename + ":");

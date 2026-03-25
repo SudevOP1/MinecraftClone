@@ -24,22 +24,27 @@ public class BlockType {
     // transparency
     public boolean hasTransparency;
 
+    // logic
+    public float hardness = 1.0f;
+    public Integer texture;
+    public boolean isSolid = true;
+
     // for GSON
     public BlockType() {
     }
 
     public int[] getTextureIndices() {
-        return new int[] { texture3, texture1, texture6, texture5, texture2, texture4 };
+        return new int[]{texture3, texture1, texture6, texture5, texture2, texture4};
     }
 
     public int[] getTextureRotations() {
-        return new int[] {
-                textureRotation3,
-                textureRotation1,
-                textureRotation6,
-                textureRotation5,
-                textureRotation2,
-                textureRotation4
+        return new int[]{
+            textureRotation3,
+            textureRotation1,
+            textureRotation6,
+            textureRotation5,
+            textureRotation2,
+            textureRotation4
         };
     }
 
@@ -47,4 +52,5 @@ public class BlockType {
     public String toString() {
         return "BlockType{name='" + name + "', codename='" + codename + "'}";
     }
+
 }

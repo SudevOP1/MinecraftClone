@@ -26,7 +26,8 @@ mvn exec:java
 | `Space`      | move up               |
 | `Left Shift` | move down             |
 | `F2`         | take screenshot       |
-| `F3`         | toggle wireframe mode |
+| `F3`         | toggle debug GUI mode |
+| `F4`         | toggle wireframe mode |
 
 ## Notes for Developers
 
@@ -41,11 +42,11 @@ The engine uses a right-handed 3D coordinate system with the following axis orie
 
 ### Texture Atlas System
 
-The game uses a **texture atlas** system where all block textures are combined into a single image file (`texture_map.png`). This improves performance by reducing texture switching during rendering.
+The game uses a **texture atlas** system where all block textures are combined into a single image file (`texture_atlas.png`). This improves performance by reducing texture switching during rendering.
 
-### Texture Map (`texture_map.png`)
+### Texture Map (`texture_atlas.png`)
 
-- **Location**: `src/main/resources/models/texture_map.png`
+- **Location**: `src/main/resources/models/texture_atlas.png`
 - **Dimensions**: 4096×2048 pixels (configured in `BlocksData.json`)
 - **Grid Layout**: 8 columns × 4 rows = 32 texture slots
 - **Individual Texture Size**: 512×512 pixels per slot

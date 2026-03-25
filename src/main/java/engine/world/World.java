@@ -1,16 +1,16 @@
 package engine.world;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F2;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F3;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_F4;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
@@ -22,28 +22,44 @@ import engine.Engine;
 import engine.IAppLogic;
 import engine.MouseInput;
 import engine.Window;
-import engine.block.Block;
+import engine.block.BlockRegistry;
 import engine.block.BlockType;
 import engine.graph.Render;
 import engine.scene.Camera;
 import engine.scene.Scene;
+import engine.world.player.GameMode;
+import engine.world.player.Inventory;
 import game.Settings;
+import utils.Debug;
 
 public class World implements IAppLogic {
 
-    String name;
-    int seed;
-    Map<Vector2s, Chunk> chunks;
+    public String name;
+    public int seed;
+    private GameMode gameMode = GameMode.CREATIVE;
+    public Map<Vector2s, Chunk> chunks;
+    public Camera camera;
+    private Scene scene;
+    private Inventory inventory;
 
-    private List<Block> blocks;
-    private Map<Vector3s, Block> blockMap;
-    private boolean f3Pressed = false;
+    private long blockBreakingStartTime = 0;
+    private long lastBlockBreakTime = 0;
+    private static final long BREAK_COOLDOWN_MS = 200;
+    private Vector3s breakingTargetBlock;
+    private engine.block.Block[] destroyOverlays = new engine.block.Block[10];
+    private Vector3s targetBlock;
+
+    private boolean showDebug = false;
+    private boolean breakingBlock = false;
     private boolean f2Pressed = false;
+    private boolean f3Pressed = false;
+    private boolean f4Pressed = false;
 
     public World(int seed, String name) {
         this.chunks = new HashMap<>();
         this.seed = seed;
         this.name = name;
+        this.showDebug = Debug.getEnabled();
     }
 
     public World(int seed) {
@@ -60,8 +76,8 @@ public class World implements IAppLogic {
 
     @Override
     public void init(Window window, Scene scene, Render render) {
-        blocks = new ArrayList<>();
-        blockMap = new HashMap<>();
+        this.scene = scene;
+        this.camera = scene.getCamera();
 
         // init chunks
         for (int x = -Settings.RENDER_DISTANCE; x < Settings.RENDER_DISTANCE; x++) {
@@ -72,9 +88,30 @@ public class World implements IAppLogic {
             }
         }
 
-        // generate block render objects from chunk data
-        for (Chunk chunk : this.chunks.values()) {
-            this.generateBlocks(scene, chunk.getBlockTypes());
+        // testing all block types
+        String[] blockNames = BlockRegistry.keySet().toArray(new String[0]);
+        Chunk chunk = this.chunks.get(new Vector2s(0, 0));
+
+        int blockIdx = 0;
+        for (String name : blockNames) {
+            BlockType blockType = BlockRegistry.get(name);
+            if (blockType.isSolid) {
+                // Ensure local coords stay within CHUNK_WIDTH
+                short localX = (short) (blockIdx % Settings.CHUNK_WIDTH);
+                short localZ = (short) (blockIdx / Settings.CHUNK_WIDTH);
+                chunk.placeBlock(localX, (short) 0, localZ, blockType);
+                blockIdx++;
+            }
+        }
+
+        // generate all chunks correctly once
+        for (Chunk c : this.chunks.values()) {
+            c.generate(scene);
+        }
+        // generate overlay block render objects for block breaking animation
+        for (int i = 0; i < 10; i++) {
+            this.destroyOverlays[i] = new engine.block.Block(scene, engine.block.BlockRegistry.get("destroy_stage_" + i), (short) 0, (short) -1000, (short) 0, pos -> null);
+            this.destroyOverlays[i].setScale(1.02f);
         }
     }
 
@@ -82,26 +119,25 @@ public class World implements IAppLogic {
     public void input(Window window, Scene scene, long diffTimeMillis, Render render) {
 
         float move = diffTimeMillis * Settings.MOVEMENT_SPEED;
-        Camera camera = scene.getCamera();
 
         // WASD, space, shift movement
         if (window.isKeyPressed(GLFW_KEY_W)) {
-            camera.moveForward(move);
+            this.camera.moveForward(move);
         }
         if (window.isKeyPressed(GLFW_KEY_S)) {
-            camera.moveForward(-move);
+            this.camera.moveForward(-move);
         }
         if (window.isKeyPressed(GLFW_KEY_A)) {
-            camera.moveLeft(move);
+            this.camera.moveLeft(move);
         }
         if (window.isKeyPressed(GLFW_KEY_D)) {
-            camera.moveRight(move);
+            this.camera.moveRight(move);
         }
         if (window.isKeyPressed(GLFW_KEY_SPACE)) {
-            camera.moveUp(move);
+            this.camera.moveUp(move);
         }
         if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
-            camera.moveUp(-move);
+            this.camera.moveUp(-move);
         }
 
         // F2 to take screenshot
@@ -114,63 +150,215 @@ public class World implements IAppLogic {
             f2Pressed = false;
         }
 
-        // F3 to toggle wireframe mode
+        // F3 to toggle debug display
         if (window.isKeyPressed(GLFW_KEY_F3)) {
             if (!f3Pressed) {
-                render.toggleWireframe();
+                this.showDebug = !this.showDebug;
                 f3Pressed = true;
             }
         } else {
             f3Pressed = false;
         }
 
+        // F4 to toggle wireframe mode
+        if (window.isKeyPressed(GLFW_KEY_F4)) {
+            if (!this.f4Pressed) {
+                render.toggleWireframe();
+                this.f4Pressed = true;
+            }
+        } else {
+            this.f4Pressed = false;
+        }
+
         // looking around using mouse
         MouseInput mouseInput = window.getMouseInput();
         Vector2f displVec = mouseInput.getDisplVec();
-        camera.addRotation(
+        this.camera.addRotation(
                 -(float) java.lang.Math.toRadians(displVec.x * Settings.MOUSE_SENSITIVITY),
                 -(float) java.lang.Math.toRadians(displVec.y * Settings.MOUSE_SENSITIVITY),
                 0);
+        this.targetBlock = this.calculateTargetBlock();
+
+        // hide all overlays by default
+        for (int i = 0; i < 10; i++) {
+            if (this.destroyOverlays[i] != null) {
+                this.destroyOverlays[i].setPosition((short) 0, (short) -1000, (short) 0);
+            }
+        }
+
+        // block breaking
+        long timeSinceLastBreak = System.currentTimeMillis() - this.lastBlockBreakTime;
+        if (this.gameMode.canBreakBlocks() && mouseInput.isLeftButtonPressed() && this.targetBlock != null && timeSinceLastBreak > BREAK_COOLDOWN_MS) {
+
+            // reset breaking state if target changed
+            if (this.breakingBlock && !this.targetBlock.equals(this.breakingTargetBlock)) {
+                this.breakingBlock = false;
+            }
+
+            if (!this.breakingBlock) {
+                this.breakingBlock = true;
+                this.breakingTargetBlock = new Vector3s(this.targetBlock.x, this.targetBlock.y, this.targetBlock.z);
+
+                if (this.gameMode.canBreakBlocksInstantly()) {
+                    this.breakBlock(this.targetBlock);
+                } else {
+                    this.blockBreakingStartTime = System.currentTimeMillis();
+                }
+            } else if (!this.gameMode.canBreakBlocksInstantly()) {
+                engine.block.BlockType type = getBlockAt(this.breakingTargetBlock.x, this.breakingTargetBlock.y, this.breakingTargetBlock.z);
+                if (type != null && type.hardness >= 0) {
+                    long elapsed = System.currentTimeMillis() - this.blockBreakingStartTime;
+                    float totalTime = type.hardness * 1000f;
+
+                    if (elapsed >= totalTime) {
+                        this.breakBlock(this.breakingTargetBlock);
+                        this.breakingBlock = false;
+                    } else {
+                        // show overlay
+                        int stage = (int) ((elapsed / totalTime) * 10);
+                        if (stage < 0) {
+                            stage = 0;
+                        }
+                        if (stage > 9) {
+                            stage = 9;
+                        }
+                        this.destroyOverlays[stage].setPosition(this.breakingTargetBlock);
+                    }
+                }
+            }
+        } else {
+            this.breakingBlock = false;
+            this.breakingTargetBlock = null;
+        }
+
+        // block placing
+        if (mouseInput.isRightButtonPressed()) {
+        }
+
     }
 
     @Override
     public void update(Window window, Scene scene, long diffTimeMillis) {
     }
 
-    @Override
-    public void cleanup() {
+    public GameMode getGameMode() {
+        return this.gameMode;
     }
 
-    // Creates Block render objects from a block-type map, performing face culling.
-    private void generateBlocks(Scene scene, Map<Vector3s, BlockType> blockTypes) {
+    public void setGameMode(GameMode gameMode) {
+        this.gameMode = gameMode;
+    }
 
-        // Reserve all positions first (for neighbor checks)
-        for (Vector3s pos : blockTypes.keySet()) {
-            blockMap.put(pos, null);
+    public Vector3s getTargetBlock() {
+        return this.targetBlock;
+    }
+
+    public boolean isF3Pressed() {
+        return this.showDebug;
+    }
+
+    public engine.block.BlockType getBlockAt(int x, int y, int z) {
+        int chunkX = (int) Math.floor((double) x / Settings.CHUNK_WIDTH);
+        int chunkZ = (int) Math.floor((double) z / Settings.CHUNK_WIDTH);
+        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+
+        if (chunk == null) {
+            return null;
         }
 
-        // Create blocks using their respective BlockTypes
-        for (Map.Entry<Vector3s, BlockType> entry : blockTypes.entrySet()) {
-            Vector3s pos = entry.getKey();
-            BlockType type = entry.getValue();
+        int localX = x - chunkX * Settings.CHUNK_WIDTH;
+        int localZ = z - chunkZ * Settings.CHUNK_WIDTH;
 
-            Block block = new Block(
-                    scene,
-                    type,
-                    pos.x,
-                    pos.y,
-                    pos.z,
-                    p -> blockTypes.get(p));
-
-            blocks.add(block);
-            blockMap.put(pos, block);
+        // Ensure Y is within chunk's vertical bounds, and X/Z within chunk dimensions
+        if (y < 0 || y >= Settings.CHUNK_WIDTH || localX < 0 || localX >= Settings.CHUNK_WIDTH || localZ < 0 || localZ >= Settings.CHUNK_WIDTH) {
+            return null;
         }
+
+        return chunk.getBlockType((short) localX, (short) y, (short) localZ);
+    }
+
+    private Vector3s calculateTargetBlock() {
+        Vector3f pos = new Vector3f(this.camera.getPosition());
+        Vector3f dir = this.camera.getForward();
+
+        float step = 0.1f;
+        for (float t = 0; t < Settings.MAX_BLOCK_REACH; t += step) {
+            pos.add(dir.x * step, dir.y * step, dir.z * step);
+
+            int bx = (int) Math.floor(pos.x);
+            int by = (int) Math.floor(pos.y);
+            int bz = (int) Math.floor(pos.z);
+
+            if (getBlockAt(bx, by, bz) != null) {
+                return new Vector3s(bx, by, bz);
+            }
+        }
+        return null;
+    }
+
+    public void breakBlock(Vector3s blockCoords) {
+        int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
+        int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
+        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+
+        if (chunk == null) {
+            return;
+        }
+
+        int localX = blockCoords.x - chunkX * Settings.CHUNK_WIDTH;
+        int localZ = blockCoords.z - chunkZ * Settings.CHUNK_WIDTH;
+
+        chunk.removeBlock(this.scene, (short) localX, (short) blockCoords.y, (short) localZ);
+        this.lastBlockBreakTime = System.currentTimeMillis();
+
+        // Regenerate neighboring blocks' meshes for updated face culling
+        this.regenerateNeighbors(blockCoords);
+    }
+
+    private void regenerateNeighbors(Vector3s blockCoords) {
+        int[][] offsets = {{0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}};
+        for (int[] off : offsets) {
+            int nx = blockCoords.x + off[0];
+            int ny = blockCoords.y + off[1];
+            int nz = blockCoords.z + off[2];
+
+            int chunkX = (int) Math.floor((double) nx / Settings.CHUNK_WIDTH);
+            int chunkZ = (int) Math.floor((double) nz / Settings.CHUNK_WIDTH);
+            Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+            if (chunk == null) {
+                continue;
+            }
+
+            short localX = (short) (nx - chunkX * Settings.CHUNK_WIDTH);
+            short localZ = (short) (nz - chunkZ * Settings.CHUNK_WIDTH);
+
+            chunk.regenerateBlock(this.scene, localX, (short) ny, localZ, pos -> getBlockAt(pos.x, pos.y, pos.z));
+        }
+    }
+
+    public void placeBlock(Vector3s blockCoords, BlockType blockType) {
+        int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
+        int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
+        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+
+        if (chunk == null) {
+            return;
+        }
+
+        int localX = blockCoords.x - chunkX * Settings.CHUNK_WIDTH;
+        int localZ = blockCoords.z - chunkZ * Settings.CHUNK_WIDTH;
+
+        chunk.placeBlock((short) localX, (short) blockCoords.y, (short) localZ, blockType);
+    }
+
+    @Override
+    public void cleanup() {
     }
 
     // Creates and starts the game engine, beginning the game loop.
     public void run() {
         String windowName = "MinecraftClone: " + this.name;
-        Engine gameEng = new Engine(windowName, new Window.WindowOptions(), this, 0, 2, 0);
+        Engine gameEng = new Engine(windowName, new Window.WindowOptions(), this, 0, 0, 0);
         gameEng.start();
     }
 

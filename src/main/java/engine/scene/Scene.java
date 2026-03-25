@@ -39,6 +39,21 @@ public class Scene {
         this.modelMap.put(model.getId(), model);
     }
 
+    public void removeEntity(Entity entity) {
+        String modelId = entity.getModelId();
+        Model model = modelMap.get(modelId);
+        if (model != null) {
+            model.getEntitiesList().remove(entity);
+        }
+    }
+
+    public void removeModel(String modelId) {
+        Model model = modelMap.remove(modelId);
+        if (model != null) {
+            model.cleanup();
+        }
+    }
+
     public Map<String, Model> getModelMap() {
         return this.modelMap;
     }

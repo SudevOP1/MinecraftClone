@@ -1,6 +1,7 @@
 package engine.scene;
 
-import org.joml.*;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 public class Camera {
     private Vector3f position;
@@ -36,6 +37,10 @@ public class Camera {
 
     public Vector3f getRotation() {
         return this.rotation;
+    }
+
+    public Vector3f getForward() {
+        return this.forward;
     }
 
     public void setPosition(float x, float y, float z) {
@@ -128,4 +133,5 @@ public class Camera {
         this.position.add(0, amt, 0);
         this.recalc();
     }
+
 }

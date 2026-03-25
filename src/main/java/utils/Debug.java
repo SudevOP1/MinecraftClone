@@ -2,7 +2,11 @@ package utils;
 
 public final class Debug {
 
-    private static boolean ENABLED = false;
+    private static boolean ENABLED = true;
+
+    public static boolean getEnabled() {
+        return ENABLED;
+    }
 
     public static void setEnabled(boolean value) {
         ENABLED = value;

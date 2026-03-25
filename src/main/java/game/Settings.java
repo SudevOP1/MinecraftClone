@@ -13,4 +13,6 @@ public class Settings {
 
     public static final short RENDER_DISTANCE = 3; // 3 chunks
 
+    public static final float MAX_BLOCK_REACH = 5.0f;
+
 }

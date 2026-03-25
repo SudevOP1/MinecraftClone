@@ -1,0 +1,41 @@
+{
+  "itemLength": 256,
+  "resolution": {
+    "width": 2048,
+    "height": 512
+  },
+  "icons": {
+    "default_icon": {
+      "name": "Default Icon",
+      "icon": 1
+    },
+    "grass_block": {
+      "name": "Grass Block",
+      "icon": 2
+    },
+    "dirt_block": {
+      "name": "Dirt Block",
+      "icon": 3
+    },
+    "cobblestone": {
+      "name": "Cobblestone",
+      "icon": 4
+    },
+    "stone": {
+      "name": "Stone",
+      "icon": 5
+    },
+    "oak_log": {
+      "name": "Oak Log",
+      "icon": 6
+    },
+    "oak_plank": {
+      "name": "Oak Plank",
+      "icon": 7
+    },
+    "oak_leaves": {
+      "name": "Oak Leaves",
+      "icon": 8
+    }
+  }
+}

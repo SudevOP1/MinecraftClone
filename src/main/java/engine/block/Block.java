@@ -1,11 +1,16 @@
 package engine.block;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
-import engine.graph.*;
-import engine.scene.*;
 import data_structures.Vector3s;
+import engine.graph.Material;
+import engine.graph.Mesh;
+import engine.graph.Model;
+import engine.graph.Texture;
+import engine.scene.Entity;
+import engine.scene.Scene;
 
 public class Block {
 
@@ -23,42 +28,37 @@ public class Block {
         // texture coordinates without sharing vertices between faces.
         // Face order: front, top, right, left, bottom, back (matches BlockType
         // textures)
-        private static final float[] POSITIONS = new float[] {
-                // Front face (bottom-left, top-left, top-right, bottom-right)
-                -0.5f, -0.5f, 0.5f,
-                -0.5f, 0.5f, 0.5f,
-                0.5f, 0.5f, 0.5f,
-                0.5f, -0.5f, 0.5f,
-
-                // Top face (bottom-left, top-left, top-right, bottom-right)
-                -0.5f, 0.5f, -0.5f,
-                -0.5f, 0.5f, 0.5f,
-                0.5f, 0.5f, 0.5f,
-                0.5f, 0.5f, -0.5f,
-
-                // Right face (bottom-left, top-left, top-right, bottom-right)
-                0.5f, -0.5f, 0.5f,
-                0.5f, 0.5f, 0.5f,
-                0.5f, 0.5f, -0.5f,
-                0.5f, -0.5f, -0.5f,
-
-                // Left face (bottom-left, top-left, top-right, bottom-right)
-                -0.5f, -0.5f, -0.5f,
-                -0.5f, 0.5f, -0.5f,
-                -0.5f, 0.5f, 0.5f,
-                -0.5f, -0.5f, 0.5f,
-
-                // Bottom face (bottom-left, top-left, top-right, bottom-right)
-                -0.5f, -0.5f, -0.5f,
-                -0.5f, -0.5f, 0.5f,
-                0.5f, -0.5f, 0.5f,
-                0.5f, -0.5f, -0.5f,
-
-                // Back face (bottom-left, top-left, top-right, bottom-right)
-                -0.5f, -0.5f, -0.5f,
-                -0.5f, 0.5f, -0.5f,
-                0.5f, 0.5f, -0.5f,
-                0.5f, -0.5f, -0.5f
+        private static final float[] POSITIONS = new float[]{
+            // Front face (bottom-left, top-left, top-right, bottom-right)
+            0.0f, 0.0f, 1.0f,
+            0.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 1.0f,
+            1.0f, 0.0f, 1.0f,
+            // Top face (bottom-left, top-left, top-right, bottom-right)
+            0.0f, 1.0f, 0.0f,
+            0.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 0.0f,
+            // Right face (bottom-left, top-left, top-right, bottom-right)
+            1.0f, 0.0f, 1.0f,
+            1.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 0.0f,
+            1.0f, 0.0f, 0.0f,
+            // Left face (bottom-left, top-left, top-right, bottom-right)
+            0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f,
+            0.0f, 1.0f, 1.0f,
+            0.0f, 0.0f, 1.0f,
+            // Bottom face (bottom-left, top-left, top-right, bottom-right)
+            0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f,
+            1.0f, 0.0f, 1.0f,
+            1.0f, 0.0f, 0.0f,
+            // Back face (bottom-left, top-left, top-right, bottom-right)
+            0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f,
+            1.0f, 1.0f, 0.0f,
+            1.0f, 0.0f, 0.0f
         };
 
         // Calculate texture coordinates for a given texture index in the atlas
@@ -85,42 +85,42 @@ public class Block {
 
             switch (rotation) {
                 case 1: // 0°
-                    rotatedCoords[0] = new float[] { u0, v1 }; // bottom-left
-                    rotatedCoords[1] = new float[] { u0, v0 }; // top-left
-                    rotatedCoords[2] = new float[] { u1, v0 }; // top-right
-                    rotatedCoords[3] = new float[] { u1, v1 }; // bottom-right
+                    rotatedCoords[0] = new float[]{u0, v1}; // bottom-left
+                    rotatedCoords[1] = new float[]{u0, v0}; // top-left
+                    rotatedCoords[2] = new float[]{u1, v0}; // top-right
+                    rotatedCoords[3] = new float[]{u1, v1}; // bottom-right
                     break;
                 case 2: // 90° clockwise
-                    rotatedCoords[0] = new float[] { u0, v0 }; // top-left -> bottom-left
-                    rotatedCoords[1] = new float[] { u1, v0 }; // top-right -> top-left
-                    rotatedCoords[2] = new float[] { u1, v1 }; // bottom-right -> top-right
-                    rotatedCoords[3] = new float[] { u0, v1 }; // bottom-left -> bottom-right
+                    rotatedCoords[0] = new float[]{u0, v0}; // top-left -> bottom-left
+                    rotatedCoords[1] = new float[]{u1, v0}; // top-right -> top-left
+                    rotatedCoords[2] = new float[]{u1, v1}; // bottom-right -> top-right
+                    rotatedCoords[3] = new float[]{u0, v1}; // bottom-left -> bottom-right
                     break;
                 case 3: // 180°
-                    rotatedCoords[0] = new float[] { u1, v0 }; // top-right -> bottom-left
-                    rotatedCoords[1] = new float[] { u1, v1 }; // bottom-right -> top-left
-                    rotatedCoords[2] = new float[] { u0, v1 }; // bottom-left -> top-right
-                    rotatedCoords[3] = new float[] { u0, v0 }; // top-left -> bottom-right
+                    rotatedCoords[0] = new float[]{u1, v0}; // top-right -> bottom-left
+                    rotatedCoords[1] = new float[]{u1, v1}; // bottom-right -> top-left
+                    rotatedCoords[2] = new float[]{u0, v1}; // bottom-left -> top-right
+                    rotatedCoords[3] = new float[]{u0, v0}; // top-left -> bottom-right
                     break;
                 case 4: // 270° clockwise
-                    rotatedCoords[0] = new float[] { u1, v1 }; // bottom-right -> bottom-left
-                    rotatedCoords[1] = new float[] { u0, v1 }; // bottom-left -> top-left
-                    rotatedCoords[2] = new float[] { u0, v0 }; // top-left -> top-right
-                    rotatedCoords[3] = new float[] { u1, v0 }; // top-right -> bottom-right
+                    rotatedCoords[0] = new float[]{u1, v1}; // bottom-right -> bottom-left
+                    rotatedCoords[1] = new float[]{u0, v1}; // bottom-left -> top-left
+                    rotatedCoords[2] = new float[]{u0, v0}; // top-left -> top-right
+                    rotatedCoords[3] = new float[]{u1, v0}; // top-right -> bottom-right
                     break;
                 default:
-                    rotatedCoords[0] = new float[] { u0, v1 };
-                    rotatedCoords[1] = new float[] { u0, v0 };
-                    rotatedCoords[2] = new float[] { u1, v0 };
-                    rotatedCoords[3] = new float[] { u1, v1 };
+                    rotatedCoords[0] = new float[]{u0, v1};
+                    rotatedCoords[1] = new float[]{u0, v0};
+                    rotatedCoords[2] = new float[]{u1, v0};
+                    rotatedCoords[3] = new float[]{u1, v1};
                     break;
             }
 
-            return new float[] {
-                    rotatedCoords[0][0], rotatedCoords[0][1],
-                    rotatedCoords[1][0], rotatedCoords[1][1],
-                    rotatedCoords[2][0], rotatedCoords[2][1],
-                    rotatedCoords[3][0], rotatedCoords[3][1]
+            return new float[]{
+                rotatedCoords[0][0], rotatedCoords[0][1],
+                rotatedCoords[1][0], rotatedCoords[1][1],
+                rotatedCoords[2][0], rotatedCoords[2][1],
+                rotatedCoords[3][0], rotatedCoords[3][1]
             };
         }
 
@@ -149,8 +149,9 @@ public class Block {
             List<Integer> indices = new ArrayList<>();
             // Each face uses 4 consecutive vertices in POSITIONS: base = face*4
             for (int face = 0; face < 6; face++) {
-                if (!visibleFaces[face])
+                if (!visibleFaces[face]) {
                     continue;
+                }
                 int b = face * 4;
                 // two triangles: (b, b+1, b+3) and (b+3, b+1, b+2)
                 indices.add(b);
@@ -183,13 +184,13 @@ public class Block {
         // check which faces are visible if block is not transparent and render the face
         // if neighbor is transparent
         boolean[] visibleFaces = new boolean[6];
-        Vector3s[] neighbors = new Vector3s[] {
-                new Vector3s(x, y, (short) (z + 1)), // front
-                new Vector3s(x, (short) (y + 1), z), // top
-                new Vector3s((short) (x + 1), y, z), // right
-                new Vector3s((short) (x - 1), y, z), // left
-                new Vector3s(x, (short) (y - 1), z), // bottom
-                new Vector3s(x, y, (short) (z - 1)), // back
+        Vector3s[] neighbors = new Vector3s[]{
+            new Vector3s(x, y, (short) (z + 1)), // front
+            new Vector3s(x, (short) (y + 1), z), // top
+            new Vector3s((short) (x + 1), y, z), // right
+            new Vector3s((short) (x - 1), y, z), // left
+            new Vector3s(x, (short) (y - 1), z), // bottom
+            new Vector3s(x, y, (short) (z - 1)), // back
         };
 
         for (int i = 0; i < 6; i++) {
@@ -198,11 +199,11 @@ public class Block {
         }
 
         // load texture (now using the texture atlas)
-        this.texture = scene.getTextureCache().createTexture("texture_map.png");
+        this.texture = scene.getTextureCache().createTexture("texture_atlas.png");
 
         // create material
         Material material = new Material();
-        material.setTexturePath("texture_map.png");
+        material.setTexturePath("texture_atlas.png");
 
         // Enable transparency for blocks that need it
         if (type.hasTransparency) {
@@ -231,18 +232,20 @@ public class Block {
         scene.addEntity(this.entity);
     }
 
-    Vector3s getPosition() {
+    public Vector3s getPosition() {
         return this.position;
     }
 
-    void setPosition(short x, short y, short z) {
+    public void setPosition(short x, short y, short z) {
         this.position.set(x, y, z);
         this.entity.setPosition(x, y, z);
         this.entity.updateModelMatrix();
     }
 
-    void setPosition(Vector3s position) {
+    public void setPosition(Vector3s position) {
         this.position.set(position.x, position.y, position.z);
+        this.entity.setPosition(position.x, position.y, position.z);
+        this.entity.updateModelMatrix();
     }
 
     public Entity getEntity() {

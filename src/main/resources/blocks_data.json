@@ -19,7 +19,9 @@
       "textureRotation4": 1,
       "textureRotation5": 1,
       "textureRotation6": 1,
-      "hasTransparency": false
+      "hasTransparency": false,
+      "hardness": 0.6,
+      "isSolid": true
     },
     "grass_block": {
       "name": "Grass Block",
@@ -35,7 +37,9 @@
       "textureRotation4": 1,
       "textureRotation5": 1,
       "textureRotation6": 1,
-      "hasTransparency": false
+      "hasTransparency": false,
+      "hardness": 0.6,
+      "isSolid": true
     },
     "dirt_block": {
       "name": "Dirt Block",
@@ -51,7 +55,9 @@
       "textureRotation4": 1,
       "textureRotation5": 1,
       "textureRotation6": 1,
-      "hasTransparency": false
+      "hasTransparency": false,
+      "hardness": 0.5,
+      "isSolid": true
     },
     "cobblestone": {
       "name": "Cobblestone",
@@ -67,7 +73,9 @@
       "textureRotation4": 1,
       "textureRotation5": 1,
       "textureRotation6": 1,
-      "hasTransparency": false
+      "hasTransparency": false,
+      "hardness": 1.5,
+      "isSolid": true
     },
     "stone": {
       "name": "Stone",
@@ -83,7 +91,9 @@
       "textureRotation4": 1,
       "textureRotation5": 1,
       "textureRotation6": 1,
-      "hasTransparency": false
+      "hasTransparency": false,
+      "hardness": 1.5,
+      "isSolid": true
     },
     "oak_log": {
       "name": "Oak Log",
@@ -99,7 +109,9 @@
       "textureRotation4": 1,
       "textureRotation5": 1,
       "textureRotation6": 1,
-      "hasTransparency": false
+      "hasTransparency": false,
+      "hardness": 2.0,
+      "isSolid": true
     },
     "oak_plank": {
       "name": "Oak Plank",
@@ -115,7 +127,9 @@
       "textureRotation4": 1,
       "textureRotation5": 1,
       "textureRotation6": 1,
-      "hasTransparency": false
+      "hasTransparency": false,
+      "hardness": 2.0,
+      "isSolid": true
     },
     "oak_leaves": {
       "name": "Oak Leaves",
@@ -131,7 +145,69 @@
       "textureRotation4": 1,
       "textureRotation5": 1,
       "textureRotation6": 1,
-      "hasTransparency": true
+      "hasTransparency": true,
+      "hardness": 0.2,
+      "isSolid": true
+    },
+    "destroy_stage_0": {
+      "name": "destroy_stage_0",
+      "texture": 25,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_1": {
+      "name": "destroy_stage_1",
+      "texture": 26,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_2": {
+      "name": "destroy_stage_2",
+      "texture": 27,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_3": {
+      "name": "destroy_stage_3",
+      "texture": 28,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_4": {
+      "name": "destroy_stage_4",
+      "texture": 29,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_5": {
+      "name": "destroy_stage_5",
+      "texture": 30,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_6": {
+      "name": "destroy_stage_6",
+      "texture": 31,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_7": {
+      "name": "destroy_stage_7",
+      "texture": 32,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_8": {
+      "name": "destroy_stage_8",
+      "texture": 23,
+      "hasTransparency": true,
+      "isSolid": false
+    },
+    "destroy_stage_9": {
+      "name": "destroy_stage_9",
+      "texture": 24,
+      "hasTransparency": true,
+      "isSolid": false
     }
   }
 }
