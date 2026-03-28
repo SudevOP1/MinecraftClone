@@ -199,11 +199,11 @@ public class Block {
         }
 
         // load texture (now using the texture atlas)
-        this.texture = scene.getTextureCache().createTexture("texture_atlas.png");
+        this.texture = scene.getTextureCache().createTexture("textures/texture_atlas.png");
 
         // create material
         Material material = new Material();
-        material.setTexturePath("texture_atlas.png");
+        material.setTexturePath("textures/texture_atlas.png");
 
         // Enable transparency for blocks that need it
         if (type.hasTransparency) {

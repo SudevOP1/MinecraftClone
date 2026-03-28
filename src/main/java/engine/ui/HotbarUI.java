@@ -22,7 +22,7 @@ public class HotbarUI {
     public void render(World world, Window window) {
         // Lazy-load the items atlas texture
         if (itemsAtlas == null) {
-            itemsAtlas = new Texture("items_atlas.png");
+            itemsAtlas = new Texture("textures/items_atlas.png");
         }
 
         int windowFlags = ImGuiWindowFlags.NoDecoration
