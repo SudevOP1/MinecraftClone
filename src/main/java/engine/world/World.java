@@ -337,33 +337,6 @@ public class World implements IAppLogic {
         return chunk.getBlockType((short) localX, (short) y, (short) localZ);
     }
 
-    private void calculateTargetBlock() {
-        Vector3f pos = new Vector3f(this.camera.getPosition());
-        Vector3f dir = this.camera.getForward();
-
-        // Track the last empty (air) block position along the ray
-        Vector3s lastEmpty = null;
-
-        float step = 0.1f;
-        for (float t = 0; t < Settings.MAX_BLOCK_REACH; t += step) {
-            pos.add(dir.x * step, dir.y * step, dir.z * step);
-
-            int bx = (int) Math.floor(pos.x);
-            int by = (int) Math.floor(pos.y);
-            int bz = (int) Math.floor(pos.z);
-
-            if (getBlockAt(bx, by, bz) != null) {
-                this.targetBlock = new Vector3s(bx, by, bz);
-                this.coordsToPlaceBlock = lastEmpty;
-                return;
-            } else {
-                lastEmpty = new Vector3s(bx, by, bz);
-            }
-        }
-        this.targetBlock = null;
-        this.coordsToPlaceBlock = null;
-    }
-
     public void breakBlock(Vector3s blockCoords) {
         int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
         int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
@@ -398,6 +371,89 @@ public class World implements IAppLogic {
         chunk.placeBlock((short) localX, (short) blockCoords.y, (short) localZ, blockType);
     }
 
+    // Uses DDA Voxel Traversal (Digital Differential Analyzer) to find the target block
+    private void calculateTargetBlock() {
+        Vector3f origin = new Vector3f(this.camera.getPosition());
+        Vector3f dir = this.camera.getForward();
+
+        // Current (camera) voxel coordinates
+        int bx = (int) Math.floor(origin.x);
+        int by = (int) Math.floor(origin.y);
+        int bz = (int) Math.floor(origin.z);
+
+        // Direction to step in each axis
+        int stepX = dir.x >= 0 ? 1 : -1;
+        int stepY = dir.y >= 0 ? 1 : -1;
+        int stepZ = dir.z >= 0 ? 1 : -1;
+
+        // How far along the ray (in t) to travel for one full voxel in each axis
+        float tDeltaX = (dir.x == 0) ? Float.MAX_VALUE : Math.abs(1.0f / dir.x);
+        float tDeltaY = (dir.y == 0) ? Float.MAX_VALUE : Math.abs(1.0f / dir.y);
+        float tDeltaZ = (dir.z == 0) ? Float.MAX_VALUE : Math.abs(1.0f / dir.z);
+
+        // Distance from origin to the first voxel boundary in each axis
+        float tMaxX = (dir.x == 0) ? Float.MAX_VALUE : ((dir.x > 0 ? (bx + 1 - origin.x) : (origin.x - bx)) * tDeltaX);
+        float tMaxY = (dir.y == 0) ? Float.MAX_VALUE : ((dir.y > 0 ? (by + 1 - origin.y) : (origin.y - by)) * tDeltaY);
+        float tMaxZ = (dir.z == 0) ? Float.MAX_VALUE : ((dir.z > 0 ? (bz + 1 - origin.z) : (origin.z - bz)) * tDeltaZ);
+
+        // Track the last empty (air) block position along the ray
+        Vector3s lastEmpty = null;
+
+        // Check the starting block first
+        if (getBlockAt(bx, by, bz) != null) {
+            this.targetBlock = new Vector3s(bx, by, bz);
+            this.coordsToPlaceBlock = null;
+            return;
+        } else {
+            lastEmpty = new Vector3s(bx, by, bz);
+        }
+
+        // DDA traversal - always step to the nearest voxel boundary
+        float maxReachSq = Settings.MAX_BLOCK_REACH * Settings.MAX_BLOCK_REACH;
+        while (true) {
+            if (tMaxX < tMaxY) {
+                if (tMaxX < tMaxZ) {
+                    bx += stepX;
+                    if (tMaxX * tMaxX > maxReachSq) {
+                        break;
+                    }
+                    tMaxX += tDeltaX;
+                } else {
+                    bz += stepZ;
+                    if (tMaxZ * tMaxZ > maxReachSq) {
+                        break;
+                    }
+                    tMaxZ += tDeltaZ;
+                }
+            } else {
+                if (tMaxY < tMaxZ) {
+                    by += stepY;
+                    if (tMaxY * tMaxY > maxReachSq) {
+                        break;
+                    }
+                    tMaxY += tDeltaY;
+                } else {
+                    bz += stepZ;
+                    if (tMaxZ * tMaxZ > maxReachSq) {
+                        break;
+                    }
+                    tMaxZ += tDeltaZ;
+                }
+            }
+
+            if (getBlockAt(bx, by, bz) != null) {
+                this.targetBlock = new Vector3s(bx, by, bz);
+                this.coordsToPlaceBlock = lastEmpty;
+                return;
+            } else {
+                lastEmpty = new Vector3s(bx, by, bz);
+            }
+        }
+        this.targetBlock = null;
+        this.coordsToPlaceBlock = null;
+    }
+
+    // Regenerates the mesh for a block and its neighbors
     private void regenerateBlockAndNeighbors(Vector3s blockCoords) {
         int[][] offsets = {{0, 0, 0}, {0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}};
         for (int[] off : offsets) {
