@@ -1,8 +1,15 @@
 package engine;
 
 import org.joml.Vector2f;
-
-import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_1;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_2;
+import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorEnterCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPos;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 
 public class MouseInput {
 
@@ -56,25 +63,29 @@ public class MouseInput {
     }
 
     public boolean isLeftButtonPressed() {
-        return leftButtonPressed;
+        return this.leftButtonPressed;
     }
 
     public boolean isRightButtonPressed() {
-        return rightButtonPressed;
+        boolean pressed = this.rightButtonPressed;
+        this.rightButtonPressed = false; // Consume the press so it only fires once per click
+        return pressed;
     }
 
     public void input() {
-        displVec.x = 0;
-        displVec.y = 0;
+        this.displVec.x = 0;
+        this.displVec.y = 0;
 
-        if (inWindow) {
-            double deltax = currentPos.x - previousPos.x;
-            double deltay = currentPos.y - previousPos.y;
+        if (this.inWindow) {
+            double deltax = this.currentPos.x - this.previousPos.x;
+            double deltay = this.currentPos.y - this.previousPos.y;
 
-            if (deltax != 0)
-                displVec.y = (float) deltax;
-            if (deltay != 0)
-                displVec.x = (float) deltay;
+            if (deltax != 0) {
+                this.displVec.y = (float) deltax;
+            }
+            if (deltay != 0) {
+                this.displVec.x = (float) deltay;
+            }
         }
 
         // Recenter mouse
@@ -83,7 +94,7 @@ public class MouseInput {
         glfwGetWindowSize(this.windowHandle, w, h);
         glfwSetCursorPos(this.windowHandle, w[0] / 2.0, h[0] / 2.0);
 
-        previousPos.set(w[0] / 2.0f, h[0] / 2.0f);
+        this.previousPos.set(w[0] / 2.0f, h[0] / 2.0f);
     }
 
 }

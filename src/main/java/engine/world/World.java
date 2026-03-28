@@ -47,6 +47,7 @@ public class World implements IAppLogic {
     private Vector3s breakingTargetBlock;
     private engine.block.Block[] destroyOverlays = new engine.block.Block[10];
     private Vector3s targetBlock;
+    private Vector3s coordsToPlaceBlock;
 
     private boolean showDebug = false;
     private boolean breakingBlock = false;
@@ -179,24 +180,24 @@ public class World implements IAppLogic {
             this.f4Pressed = false;
         }
 
-        // looking around using mouse
+        // Looking around using mouse
         MouseInput mouseInput = window.getMouseInput();
         Vector2f displVec = mouseInput.getDisplVec();
         this.camera.addRotation(
                 -(float) java.lang.Math.toRadians(displVec.x * Settings.MOUSE_SENSITIVITY),
                 -(float) java.lang.Math.toRadians(displVec.y * Settings.MOUSE_SENSITIVITY),
                 0);
-        this.targetBlock = this.calculateTargetBlock();
+        this.calculateTargetBlock();
         this.scene.setTargetBlock(this.targetBlock);
 
-        // hide all overlays by default
+        // Hide all overlays by default
         for (int i = 0; i < 10; i++) {
             if (this.destroyOverlays[i] != null) {
                 this.destroyOverlays[i].setPosition((short) 0, (short) -1000, (short) 0);
             }
         }
 
-        // scroll wheel to change selected slot
+        // Scroll wheel to change selected slot
         float scroll = mouseInput.getScrollDelta();
         if (scroll != 0) {
             int currentSlot = this.getInventory().getSelectedSlot();
@@ -207,7 +208,7 @@ public class World implements IAppLogic {
             this.getInventory().setSelectedSlot(nextSlot);
         }
 
-        // block breaking
+        // Block breaking
         long timeSinceLastBreak = System.currentTimeMillis() - this.lastBlockBreakTime;
         if (this.gameMode.canBreakBlocks() && mouseInput.isLeftButtonPressed() && this.targetBlock != null) {
             // Check cooldown only for creative mode (instant breaking) to prevent accidental chain-breaks
@@ -239,7 +240,7 @@ public class World implements IAppLogic {
                         this.breakBlock(this.breakingTargetBlock);
                         this.breakingBlock = false;
                     } else {
-                        // show overlay
+                        // Show overlay
                         int stage = (int) ((elapsed / totalTime) * 10);
                         if (stage < 0) {
                             stage = 0;
@@ -270,8 +271,24 @@ public class World implements IAppLogic {
             this.breakingTargetBlock = null;
         }
 
-        // block placing
-        if (mouseInput.isRightButtonPressed()) {
+        // Block placing
+        if (this.gameMode.canPlaceBlocks()
+                && mouseInput.isRightButtonPressed()
+                && this.targetBlock != null
+                && this.inventory.getSelectedItemType() != null) {
+
+            // Place Block
+            BlockType blockType = this.inventory.getSelectedBlockType();
+
+            if (this.coordsToPlaceBlock != null && blockType != null) {
+                this.placeBlock(this.coordsToPlaceBlock, blockType);
+                this.regenerateBlockAndNeighbors(this.coordsToPlaceBlock);
+
+                // Decrement item count if survival
+                if (this.gameMode == GameMode.SURVIVAL) {
+                    this.inventory.decrementItemCount(this.inventory.getSelectedSlot());
+                }
+            }
         }
 
     }
@@ -320,9 +337,12 @@ public class World implements IAppLogic {
         return chunk.getBlockType((short) localX, (short) y, (short) localZ);
     }
 
-    private Vector3s calculateTargetBlock() {
+    private void calculateTargetBlock() {
         Vector3f pos = new Vector3f(this.camera.getPosition());
         Vector3f dir = this.camera.getForward();
+
+        // Track the last empty (air) block position along the ray
+        Vector3s lastEmpty = null;
 
         float step = 0.1f;
         for (float t = 0; t < Settings.MAX_BLOCK_REACH; t += step) {
@@ -333,10 +353,15 @@ public class World implements IAppLogic {
             int bz = (int) Math.floor(pos.z);
 
             if (getBlockAt(bx, by, bz) != null) {
-                return new Vector3s(bx, by, bz);
+                this.targetBlock = new Vector3s(bx, by, bz);
+                this.coordsToPlaceBlock = lastEmpty;
+                return;
+            } else {
+                lastEmpty = new Vector3s(bx, by, bz);
             }
         }
-        return null;
+        this.targetBlock = null;
+        this.coordsToPlaceBlock = null;
     }
 
     public void breakBlock(Vector3s blockCoords) {
@@ -354,12 +379,27 @@ public class World implements IAppLogic {
         chunk.removeBlock(this.scene, (short) localX, (short) blockCoords.y, (short) localZ);
         this.lastBlockBreakTime = System.currentTimeMillis();
 
-        // Regenerate neighboring blocks' meshes for updated face culling
-        this.regenerateNeighbors(blockCoords);
+        // Regenerate the block and its neighbors' meshes for updated face culling
+        this.regenerateBlockAndNeighbors(blockCoords);
     }
 
-    private void regenerateNeighbors(Vector3s blockCoords) {
-        int[][] offsets = {{0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}};
+    public void placeBlock(Vector3s blockCoords, BlockType blockType) {
+        int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
+        int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
+        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+
+        if (chunk == null) {
+            return;
+        }
+
+        int localX = blockCoords.x - chunkX * Settings.CHUNK_WIDTH;
+        int localZ = blockCoords.z - chunkZ * Settings.CHUNK_WIDTH;
+
+        chunk.placeBlock((short) localX, (short) blockCoords.y, (short) localZ, blockType);
+    }
+
+    private void regenerateBlockAndNeighbors(Vector3s blockCoords) {
+        int[][] offsets = {{0, 0, 0}, {0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}};
         for (int[] off : offsets) {
             int nx = blockCoords.x + off[0];
             int ny = blockCoords.y + off[1];
@@ -377,21 +417,6 @@ public class World implements IAppLogic {
 
             chunk.regenerateBlock(this.scene, localX, (short) ny, localZ, pos -> getBlockAt(pos.x, pos.y, pos.z));
         }
-    }
-
-    public void placeBlock(Vector3s blockCoords, BlockType blockType) {
-        int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
-        int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
-        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
-
-        if (chunk == null) {
-            return;
-        }
-
-        int localX = blockCoords.x - chunkX * Settings.CHUNK_WIDTH;
-        int localZ = blockCoords.z - chunkZ * Settings.CHUNK_WIDTH;
-
-        chunk.placeBlock((short) localX, (short) blockCoords.y, (short) localZ, blockType);
     }
 
     @Override

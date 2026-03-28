@@ -4,6 +4,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public class Camera {
+
     private Vector3f position;
     private Vector3f rotation;
     private Matrix4f viewMatrix = new Matrix4f();

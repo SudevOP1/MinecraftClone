@@ -1,5 +1,7 @@
 package engine.world.player;
 
+import engine.block.BlockRegistry;
+import engine.block.BlockType;
 import engine.item.ItemRegistry;
 import engine.item.ItemType;
 import game.Settings;
@@ -46,12 +48,23 @@ public class Inventory {
         this.selectedSlot = selectedSlot;
     }
 
-    public ItemType getSelectedItem() {
+    public ItemType getSelectedItemType() {
         return this.items[this.selectedSlot];
     }
 
-    public void setSelectedItem(ItemType item) {
+    public void setSelectedItemType(ItemType item) {
         this.items[this.selectedSlot] = item;
+    }
+
+    public BlockType getSelectedBlockType() {
+        if (this.items[this.selectedSlot] == null) {
+            return null;
+        }
+        return BlockRegistry.get(this.items[this.selectedSlot].codename);
+    }
+
+    public void setSelectedBlockType(BlockType blockType) {
+        this.items[this.selectedSlot] = ItemRegistry.get(blockType.codename);
     }
 
     public int getItemCount(int slot) {
@@ -68,6 +81,9 @@ public class Inventory {
 
     public void decrementItemCount(int slot) {
         this.itemCounts[slot]--;
+        if (this.itemCounts[slot] == 0) {
+            this.items[slot] = null;
+        }
     }
 
     public void clearInventory() {
