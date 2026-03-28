@@ -13,7 +13,7 @@ import com.google.gson.JsonObject;
 
 import utils.Debug;
 
-public class ItemRegistery {
+public class ItemRegistry {
 
     private static final Map<String, ItemType> REGISTRY = new HashMap<>();
     private static int itemLength = 256;
@@ -50,7 +50,7 @@ public class ItemRegistery {
 
     private static void loadFromJson(String filename) {
         try {
-            InputStream is = ItemRegistery.class.getClassLoader().getResourceAsStream(filename);
+            InputStream is = ItemRegistry.class.getClassLoader().getResourceAsStream(filename);
 
             if (is == null) {
                 Debug.errln("File " + filename + " not found in classpath");

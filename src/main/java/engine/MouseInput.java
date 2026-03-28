@@ -34,6 +34,17 @@ public class MouseInput {
             this.leftButtonPressed = button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS;
             this.rightButtonPressed = button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS;
         });
+        glfwSetScrollCallback(windowHandle, (handle, xoffset, yoffset) -> {
+            this.scrollDelta = (float) yoffset;
+        });
+    }
+
+    private float scrollDelta;
+
+    public float getScrollDelta() {
+        float delta = this.scrollDelta;
+        this.scrollDelta = 0; // consume delta
+        return delta;
     }
 
     public Vector2f getCurrentPos() {

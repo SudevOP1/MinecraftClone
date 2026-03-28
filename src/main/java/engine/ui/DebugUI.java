@@ -3,37 +3,20 @@ package engine.ui;
 import org.joml.Vector3f;
 
 import data_structures.Vector3s;
-import engine.Window;
 import engine.block.BlockType;
 import engine.world.World;
 import imgui.ImGui;
 import imgui.ImVec2;
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.gl3.ImGuiImplGl3;
-import imgui.glfw.ImGuiImplGlfw;
 
-public class DebugGui {
+public class DebugUI {
 
-    private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
-    private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
-    private final String glslVersion = "#version 330 core";
-
-    public DebugGui(Window window) {
-        ImGui.createContext();
-
-        // loading font
-        ImGui.getIO().getFonts().addFontFromFileTTF("src/main/resources/font/Minecraft.ttf", 20.0f);
-        ImGui.getIO().setFontGlobalScale(1.5f); // font size
-
-        imGuiGlfw.init(window.getWindowHandle(), true);
-        imGuiGl3.init(glslVersion);
+    public DebugUI() {
+        // Managed by UIManager
     }
 
     public void render(World world) {
-        imGuiGlfw.newFrame();
-        ImGui.newFrame();
-
         int windowFlags = ImGuiWindowFlags.NoDecoration
                 | ImGuiWindowFlags.AlwaysAutoResize
                 | ImGuiWindowFlags.NoSavedSettings
@@ -51,12 +34,22 @@ public class DebugGui {
 
         ImGui.begin("Debug", windowFlags);
 
-        // Rendering white text without shadow for now
         Vector3f pos = world.camera.getPosition();
         Vector3f rot = world.camera.getRotation();
+        String direction = "";
+        if (rot.y == 0) {
+            direction = "North";
+        } else if (rot.y == Math.PI / 2) {
+            direction = "East";
+        } else if (rot.y == Math.PI) {
+            direction = "South";
+        } else if (rot.y == 3 * Math.PI / 2) {
+            direction = "West";
+        }
 
         drawTextWithBg(String.format("Player X, Y, Z: %.3f, %.3f, %.3f", pos.x, pos.y, pos.z));
-        drawTextWithBg(String.format("Camera Pitch, Yaw, Roll: %.2f, %.2f, %.2f", rot.x, rot.y, rot.z));
+        drawTextWithBg(String.format("Camera Pitch, Yaw, Roll: %.2fdeg, %.2fdeg, %.2fdeg", Math.toDegrees(rot.x), Math.toDegrees(rot.y), Math.toDegrees(rot.z)));
+        drawTextWithBg(String.format("Direction: Facing %s", direction));
 
         Vector3s targetBlock = world.getTargetBlock();
         if (targetBlock != null) {
@@ -69,9 +62,6 @@ public class DebugGui {
 
         ImGui.end();
         ImGui.popStyleColor(2);
-
-        ImGui.render();
-        imGuiGl3.renderDrawData(ImGui.getDrawData());
     }
 
     private void drawTextWithBg(String text) {
@@ -85,14 +75,8 @@ public class DebugGui {
         ImGui.getWindowDrawList().addRectFilled(
                 pos.x - paddingX, pos.y - paddingY,
                 pos.x + size.x + paddingX, pos.y + size.y + paddingY,
-                imgui.ImColor.intToColor(0, 0, 0, 50) // (0 - 255)
+                imgui.ImColor.intToColor(0, 0, 0, 50)
         );
         ImGui.text(text);
-    }
-
-    public void cleanup() {
-        imGuiGl3.dispose();
-        imGuiGlfw.dispose();
-        ImGui.destroyContext();
     }
 }

@@ -7,35 +7,43 @@
   "icons": {
     "default_icon": {
       "name": "Default Icon",
-      "icon": 1
+      "icon": 1,
+      "stackSize": 1
     },
     "grass_block": {
       "name": "Grass Block",
-      "icon": 2
+      "icon": 2,
+      "stackSize": 64
     },
     "dirt_block": {
       "name": "Dirt Block",
-      "icon": 3
+      "icon": 3,
+      "stackSize": 64
     },
     "cobblestone": {
       "name": "Cobblestone",
-      "icon": 4
+      "icon": 4,
+      "stackSize": 64
     },
     "stone": {
       "name": "Stone",
-      "icon": 5
+      "icon": 5,
+      "stackSize": 64
     },
     "oak_log": {
       "name": "Oak Log",
-      "icon": 6
+      "icon": 6,
+      "stackSize": 64
     },
     "oak_plank": {
       "name": "Oak Plank",
-      "icon": 7
+      "icon": 7,
+      "stackSize": 64
     },
     "oak_leaves": {
       "name": "Oak Leaves",
-      "icon": 8
+      "icon": 8,
+      "stackSize": 64
     }
   }
 }

@@ -80,6 +80,10 @@ public class Texture {
         glDeleteTextures(this.textureId);
     }
 
+    public int getTextureId() {
+        return this.textureId;
+    }
+
     public String getTexturePath() {
         return this.texturePath;
     }

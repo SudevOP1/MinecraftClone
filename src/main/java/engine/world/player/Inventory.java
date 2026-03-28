@@ -1,33 +1,41 @@
 package engine.world.player;
 
-import engine.item.ItemRegistery;
+import engine.item.ItemRegistry;
 import engine.item.ItemType;
+import game.Settings;
 
 public class Inventory {
 
-    public static final int SIZE = 9 * 4;
-    public static final int HOTBAR_SIZE = 9;
-    // first 9 slots for hotbar
-    // last 27 slots for main inventory
-
     private ItemType[] items;
     private int selectedSlot;
+    private int[] itemCounts;
 
     public Inventory() {
-        this.items = new ItemType[SIZE];
+        this.items = new ItemType[Settings.HOTBAR_CELL_COUNT];
         this.selectedSlot = 0;
+        this.itemCounts = new int[Settings.HOTBAR_CELL_COUNT];
     }
 
-    public ItemType get(int slot) {
+    public ItemType getItem(int slot) {
         return this.items[slot];
     }
 
-    public void set(int slot, ItemType item) {
+    public void setItem(int slot, ItemType item, int count) {
+        this.items[slot] = item;
+        this.itemCounts[slot] = count;
+    }
+
+    public void setItem(int slot, ItemType item) {
         this.items[slot] = item;
     }
 
-    public void set(int slot, String codename) {
-        this.items[slot] = ItemRegistery.get(codename);
+    public void setItem(int slot, String codename, int count) {
+        this.items[slot] = ItemRegistry.get(codename);
+        this.itemCounts[slot] = count;
+    }
+
+    public void setItem(int slot, String codename) {
+        this.items[slot] = ItemRegistry.get(codename);
     }
 
     public int getSelectedSlot() {
@@ -38,24 +46,45 @@ public class Inventory {
         this.selectedSlot = selectedSlot;
     }
 
-    public ItemType getHotbarItem() {
+    public ItemType getSelectedItem() {
         return this.items[this.selectedSlot];
     }
 
-    public void setHotbarItem(ItemType item) {
+    public void setSelectedItem(ItemType item) {
         this.items[this.selectedSlot] = item;
     }
 
-    public void clearHotbar() {
-        for (int i = 0; i < HOTBAR_SIZE; i++) {
+    public int getItemCount(int slot) {
+        return this.itemCounts[slot];
+    }
+
+    public void setItemCount(int slot, int count) {
+        this.itemCounts[slot] = count;
+    }
+
+    public void incrementItemCount(int slot) {
+        this.itemCounts[slot]++;
+    }
+
+    public void decrementItemCount(int slot) {
+        this.itemCounts[slot]--;
+    }
+
+    public void clearInventory() {
+        for (int i = 0; i < Settings.INVENTORY_SIZE; i++) {
             this.items[i] = null;
         }
     }
 
-    public void clear() {
-        for (int i = 0; i < SIZE; i++) {
+    public void clearHotbar() {
+        for (int i = 0; i < Settings.HOTBAR_CELL_COUNT; i++) {
             this.items[i] = null;
         }
+    }
+
+    public void clearSlot(int slot) {
+        this.items[slot] = null;
+        this.itemCounts[slot] = 0;
     }
 
 }

@@ -1,8 +1,8 @@
 package engine;
 
-import engine.scene.Scene;
 import engine.graph.Render;
-import engine.ui.DebugGui;
+import engine.scene.Scene;
+import engine.ui.UIManager;
 
 public class Engine {
 
@@ -14,7 +14,7 @@ public class Engine {
     private Scene scene;
     private int targetFps;
     private int targetUps;
-    private DebugGui debugGui;
+    private UIManager uiManager;
 
     public Engine(String windowTitle, Window.WindowOptions opts, IAppLogic appLogic) {
         this.window = new Window(windowTitle, opts, () -> {
@@ -27,7 +27,7 @@ public class Engine {
         this.render = new Render();
         this.scene = new Scene(this.window.getWidth(), this.window.getHeight());
         this.appLogic.init(this.window, scene, render);
-        this.debugGui = new DebugGui(this.window);
+        this.uiManager = new UIManager(this.window);
         this.running = true;
     }
 
@@ -42,7 +42,7 @@ public class Engine {
         this.render = new Render();
         this.scene = new Scene(this.window.getWidth(), this.window.getHeight(), x, y, z);
         this.appLogic.init(this.window, scene, render);
-        this.debugGui = new DebugGui(this.window);
+        this.uiManager = new UIManager(this.window);
         this.running = true;
     }
 
@@ -88,9 +88,7 @@ public class Engine {
 
                 if (this.appLogic instanceof engine.world.World) {
                     engine.world.World world = (engine.world.World) this.appLogic;
-                    if (world.isF3Pressed()) {
-                        this.debugGui.render(world);
-                    }
+                    this.uiManager.render(world, this.window);
                 }
 
                 deltaFps--;
@@ -106,8 +104,8 @@ public class Engine {
         this.appLogic.cleanup();
         this.scene.cleanup();
         this.render.cleanup();
-        if (this.debugGui != null) {
-            this.debugGui.cleanup();
+        if (this.uiManager != null) {
+            this.uiManager.cleanup();
         }
         this.window.cleanup();
     }

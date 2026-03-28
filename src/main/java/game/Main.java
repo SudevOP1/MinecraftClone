@@ -1,24 +1,23 @@
 package game;
 
 import java.util.Random;
-import java.util.Scanner;
 
 import engine.world.World;
-import utils.Debug;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        Scanner sc = new Scanner(System.in);
-        String worldName, seedInput;
+        // Scanner sc = new Scanner(System.in);
+        String worldName = "";
+        String seedInput = "";
         int seed;
 
-        Debug.print("Enter world name: ");
-        worldName = sc.nextLine();
+        // Debug.print("Enter world name: ");
+        // worldName = sc.nextLine();
 
-        Debug.print("Enter seed: ");
-        seedInput = sc.nextLine();
+        // Debug.print("Enter seed: ");
+        // seedInput = sc.nextLine();
 
         if (worldName.isEmpty()) {
             worldName = "New World";
@@ -31,7 +30,7 @@ public class Main {
 
         World world = new World(seed, worldName);
         world.run();
-        sc.close();
+        // sc.close();
     }
 
 }

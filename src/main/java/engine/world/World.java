@@ -59,6 +59,7 @@ public class World implements IAppLogic {
         this.seed = seed;
         this.name = name;
         this.showDebug = Debug.getEnabled();
+        this.inventory = new Inventory();
     }
 
     public World(int seed) {
@@ -112,6 +113,15 @@ public class World implements IAppLogic {
             this.destroyOverlays[i] = new engine.block.Block(scene, engine.block.BlockRegistry.get("destroy_stage_" + i), (short) 0, (short) -1000, (short) 0, pos -> null);
             this.destroyOverlays[i].setScale(1.02f);
         }
+
+        // Testing inventory
+        this.inventory.setItem(0, "grass_block", 64);
+        this.inventory.setItem(1, "dirt_block", 64);
+        this.inventory.setItem(2, "cobblestone", 64);
+        this.inventory.setItem(3, "stone", 64);
+        this.inventory.setItem(4, "oak_log", 64);
+        this.inventory.setItem(5, "oak_plank", 64);
+        this.inventory.setItem(6, "oak_leaves", 64);
     }
 
     @Override
@@ -183,6 +193,17 @@ public class World implements IAppLogic {
             if (this.destroyOverlays[i] != null) {
                 this.destroyOverlays[i].setPosition((short) 0, (short) -1000, (short) 0);
             }
+        }
+
+        // scroll wheel to change selected slot
+        float scroll = mouseInput.getScrollDelta();
+        if (scroll != 0) {
+            int currentSlot = this.getInventory().getSelectedSlot();
+            int nextSlot = (currentSlot + (scroll > 0 ? -1 : 1)) % Settings.HOTBAR_CELL_COUNT;
+            if (nextSlot < 0) {
+                nextSlot += Settings.HOTBAR_CELL_COUNT;
+            }
+            this.getInventory().setSelectedSlot(nextSlot);
         }
 
         // block breaking
@@ -268,6 +289,10 @@ public class World implements IAppLogic {
 
     public Vector3s getTargetBlock() {
         return this.targetBlock;
+    }
+
+    public Inventory getInventory() {
+        return this.inventory;
     }
 
     public boolean isF3Pressed() {
@@ -375,7 +400,7 @@ public class World implements IAppLogic {
     // Creates and starts the game engine, beginning the game loop.
     public void run() {
         String windowName = "MinecraftClone: " + this.name;
-        Engine gameEng = new Engine(windowName, new Window.WindowOptions(), this, 0, 0, 0);
+        Engine gameEng = new Engine(windowName, new Window.WindowOptions(), this, Settings.SPAWN_X, Settings.SPAWN_Y, Settings.SPAWN_Z);
         gameEng.start();
     }
 
