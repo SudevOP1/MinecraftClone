@@ -89,6 +89,8 @@ Row 4: [25] [26] [27] [28] [29] [30] [31] [32]
       "textureRotation2": 1,
       ...
       "hasTransparency": false // Whether block has transparent parts or not
+      "isSolid": true // Whether block is solid or not
+      "hardness": 1 // How hard the block is to break (0.0 - 1.0)
     }
   }
 }
