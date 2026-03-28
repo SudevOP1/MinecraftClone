@@ -1,11 +1,15 @@
 package engine.graph;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.joml.Matrix4f;
+import org.joml.Vector4f;
+import static org.lwjgl.opengl.GL20.glGetUniformLocation;
+import static org.lwjgl.opengl.GL20.glUniform1i;
+import static org.lwjgl.opengl.GL20.glUniform4fv;
+import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
 import org.lwjgl.system.MemoryStack;
-
-import static org.lwjgl.opengl.GL20.*;
 
 public class UniformsMap {
 
@@ -21,8 +25,7 @@ public class UniformsMap {
         int uniformLocation = glGetUniformLocation(programId, uniformName);
         if (uniformLocation < 0) {
             throw new RuntimeException(
-                    "Could not find uniform [" + uniformName +
-                            "] in shader program [" + programId + "]");
+                    "Could not find uniform [" + uniformName + "] in shader program [" + programId + "]");
         }
         uniforms.put(uniformName, uniformLocation);
     }
@@ -44,6 +47,12 @@ public class UniformsMap {
     public void setUniform(String uniformName, Matrix4f value) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             glUniformMatrix4fv(getUniformLocation(uniformName), false, value.get(stack.mallocFloat(16)));
+        }
+    }
+
+    public void setUniform(String uniformName, Vector4f value) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            glUniform4fv(getUniformLocation(uniformName), value.get(stack.mallocFloat(4)));
         }
     }
 

@@ -1,9 +1,10 @@
 package engine.scene;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import engine.graph.Model;
 import engine.graph.TextureCache;
-
-import java.util.*;
 
 public class Scene {
 
@@ -11,6 +12,7 @@ public class Scene {
     private Projection projection;
     private TextureCache textureCache;
     private Camera camera;
+    private data_structures.Vector3s targetBlock;
 
     public Scene(int width, int height) {
         this.modelMap = new HashMap<>();
@@ -60,6 +62,14 @@ public class Scene {
 
     public Projection getProjection() {
         return this.projection;
+    }
+
+    public void setTargetBlock(data_structures.Vector3s targetBlock) {
+        this.targetBlock = targetBlock;
+    }
+
+    public data_structures.Vector3s getTargetBlock() {
+        return this.targetBlock;
     }
 
     public TextureCache getTextureCache() {

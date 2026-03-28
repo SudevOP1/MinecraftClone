@@ -19,6 +19,8 @@ public class Settings {
     // blocks
     public static final float MAX_BLOCK_REACH = 5.0f;
     public static final long BREAK_COOLDOWN_MS = 200;
+    public static final float TARGET_BLOCK_BORDER_THICKNESS = 1.0f; // increasing this to >1 wont work as intended, OpenGL has deprecated line widths >1.0f
+    public static final float[] TARGET_BLOCK_BORDER_COLOR = {0.0f, 0.0f, 0.0f, 1.0f}; // black
 
     // inventory
     public static final int HOTBAR_CELL_COUNT = 9;

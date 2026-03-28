@@ -187,6 +187,7 @@ public class World implements IAppLogic {
                 -(float) java.lang.Math.toRadians(displVec.y * Settings.MOUSE_SENSITIVITY),
                 0);
         this.targetBlock = this.calculateTargetBlock();
+        this.scene.setTargetBlock(this.targetBlock);
 
         // hide all overlays by default
         for (int i = 0; i < 10; i++) {

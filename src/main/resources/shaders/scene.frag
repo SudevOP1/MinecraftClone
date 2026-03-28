@@ -4,7 +4,14 @@ in vec2 outTexCoords;
 out vec4 fragColor;
 uniform sampler2D txtSampler;
 
+uniform int isWireframe;
+uniform vec4 wireframeColor;
+
 void main()
 {
-    fragColor = texture(txtSampler, outTexCoords);
+    if (isWireframe == 1) {
+        fragColor = wireframeColor;
+    } else {
+        fragColor = texture(txtSampler, outTexCoords);
+    }
 }
