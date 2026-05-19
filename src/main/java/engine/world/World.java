@@ -1,6 +1,7 @@
 package engine.world;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -22,6 +23,7 @@ import engine.Engine;
 import engine.IAppLogic;
 import engine.MouseInput;
 import engine.Window;
+import engine.block.Block;
 import engine.block.BlockRegistry;
 import engine.block.BlockType;
 import engine.graph.Render;
@@ -37,6 +39,7 @@ public class World implements IAppLogic {
     public String name;
     public int seed;
     private GameMode gameMode = GameMode.CREATIVE;
+    public Map<Vector2s, Chunk> generatedChunks;
     public Map<Vector2s, Chunk> chunks;
     public Camera camera;
     private Scene scene;
@@ -56,6 +59,7 @@ public class World implements IAppLogic {
     private boolean f4Pressed = false;
 
     public World(int seed, String name) {
+        this.generatedChunks = new HashMap<>();
         this.chunks = new HashMap<>();
         this.seed = seed;
         this.name = name;
@@ -80,38 +84,17 @@ public class World implements IAppLogic {
         this.scene = scene;
         this.camera = scene.getCamera();
 
-        // init chunks
-        for (int x = -Settings.RENDER_DISTANCE; x < Settings.RENDER_DISTANCE; x++) {
-            for (int y = -Settings.RENDER_DISTANCE; y < Settings.RENDER_DISTANCE; y++) {
-                Vector2s chunkCoords = new Vector2s(x, y);
-                Chunk newChunk = new Chunk(x, y, seed);
-                this.chunks.put(chunkCoords, newChunk);
-            }
-        }
+        this.updateChunks(true);
 
-        // testing all block types
-        String[] blockNames = BlockRegistry.keySet().toArray(new String[0]);
-        Chunk chunk = this.chunks.get(new Vector2s(0, 0));
-
-        int blockIdx = 0;
-        for (String name : blockNames) {
-            BlockType blockType = BlockRegistry.get(name);
-            if (blockType.isSolid) {
-                // Ensure local coords stay within CHUNK_WIDTH
-                short localX = (short) (blockIdx % Settings.CHUNK_WIDTH);
-                short localZ = (short) (blockIdx / Settings.CHUNK_WIDTH);
-                chunk.placeBlock(localX, (short) 0, localZ, blockType);
-                blockIdx++;
-            }
-        }
-
-        // generate all chunks correctly once
-        for (Chunk c : this.chunks.values()) {
-            c.generate(scene);
-        }
         // generate overlay block render objects for block breaking animation
         for (int i = 0; i < 10; i++) {
-            this.destroyOverlays[i] = new engine.block.Block(scene, engine.block.BlockRegistry.get("destroy_stage_" + i), (short) 0, (short) -1000, (short) 0, pos -> null);
+            this.destroyOverlays[i] = new Block(
+                    scene,
+                    BlockRegistry.get("destroy_stage_" + i),
+                    (short) 0,
+                    (short) -1000,
+                    (short) 0,
+                    pos -> null);
             this.destroyOverlays[i].setScale(1.02f);
         }
 
@@ -211,7 +194,8 @@ public class World implements IAppLogic {
         // Block breaking
         long timeSinceLastBreak = System.currentTimeMillis() - this.lastBlockBreakTime;
         if (this.gameMode.canBreakBlocks() && mouseInput.isLeftButtonPressed() && this.targetBlock != null) {
-            // Check cooldown only for creative mode (instant breaking) to prevent accidental chain-breaks
+            // Check cooldown only for creative mode (instant breaking) to prevent
+            // accidental chain-breaks
             if (this.gameMode.canBreakBlocksInstantly() && timeSinceLastBreak <= Settings.BREAK_COOLDOWN_MS) {
                 return;
             }
@@ -231,7 +215,10 @@ public class World implements IAppLogic {
                     this.blockBreakingStartTime = System.currentTimeMillis();
                 }
             } else if (!this.gameMode.canBreakBlocksInstantly()) {
-                engine.block.BlockType breakingBlockType = getBlockAt(this.breakingTargetBlock.x, this.breakingTargetBlock.y, this.breakingTargetBlock.z);
+                engine.block.BlockType breakingBlockType = getBlockAt(
+                        this.breakingTargetBlock.x,
+                        this.breakingTargetBlock.y,
+                        this.breakingTargetBlock.z);
                 if (breakingBlockType != null && breakingBlockType.hardness >= 0) {
                     long elapsed = System.currentTimeMillis() - this.blockBreakingStartTime;
                     float totalTime = breakingBlockType.hardness * 1000f;
@@ -254,14 +241,12 @@ public class World implements IAppLogic {
                         this.destroyOverlays[stage].setPosition(
                                 (short) this.breakingTargetBlock.x,
                                 (short) this.breakingTargetBlock.y,
-                                (short) this.breakingTargetBlock.z
-                        );
+                                (short) this.breakingTargetBlock.z);
                         // Manually overriding the entity position to add the sub-block offset
                         this.destroyOverlays[stage].getEntity().setPosition(
                                 this.breakingTargetBlock.x + offset,
                                 this.breakingTargetBlock.y + offset,
-                                this.breakingTargetBlock.z + offset
-                        );
+                                this.breakingTargetBlock.z + offset);
                         this.destroyOverlays[stage].getEntity().updateModelMatrix();
                     }
                 }
@@ -295,6 +280,7 @@ public class World implements IAppLogic {
 
     @Override
     public void update(Window window, Scene scene, long diffTimeMillis) {
+        this.updateChunks(false);
     }
 
     public GameMode getGameMode() {
@@ -320,7 +306,7 @@ public class World implements IAppLogic {
     public engine.block.BlockType getBlockAt(int x, int y, int z) {
         int chunkX = (int) Math.floor((double) x / Settings.CHUNK_WIDTH);
         int chunkZ = (int) Math.floor((double) z / Settings.CHUNK_WIDTH);
-        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+        Chunk chunk = this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
 
         if (chunk == null) {
             return null;
@@ -330,7 +316,8 @@ public class World implements IAppLogic {
         int localZ = z - chunkZ * Settings.CHUNK_WIDTH;
 
         // Ensure Y is within chunk's vertical bounds, and X/Z within chunk dimensions
-        if (y < 0 || y >= Settings.CHUNK_WIDTH || localX < 0 || localX >= Settings.CHUNK_WIDTH || localZ < 0 || localZ >= Settings.CHUNK_WIDTH) {
+        if (y < 0 || y >= Settings.CHUNK_WIDTH || localX < 0 || localX >= Settings.CHUNK_WIDTH || localZ < 0
+                || localZ >= Settings.CHUNK_WIDTH) {
             return null;
         }
 
@@ -340,7 +327,7 @@ public class World implements IAppLogic {
     public void breakBlock(Vector3s blockCoords) {
         int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
         int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
-        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+        Chunk chunk = this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
 
         if (chunk == null) {
             return;
@@ -359,7 +346,7 @@ public class World implements IAppLogic {
     public void placeBlock(Vector3s blockCoords, BlockType blockType) {
         int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
         int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
-        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+        Chunk chunk = this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
 
         if (chunk == null) {
             return;
@@ -371,7 +358,8 @@ public class World implements IAppLogic {
         chunk.placeBlock((short) localX, (short) blockCoords.y, (short) localZ, blockType);
     }
 
-    // Uses DDA Voxel Traversal (Digital Differential Analyzer) to find the target block
+    // Uses DDA Voxel Traversal (Digital Differential Analyzer) to find the target
+    // block
     private void calculateTargetBlock() {
         Vector3f origin = new Vector3f(this.camera.getPosition());
         Vector3f dir = this.camera.getForward();
@@ -455,7 +443,8 @@ public class World implements IAppLogic {
 
     // Regenerates the mesh for a block and its neighbors
     private void regenerateBlockAndNeighbors(Vector3s blockCoords) {
-        int[][] offsets = {{0, 0, 0}, {0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}};
+        int[][] offsets = { { 0, 0, 0 }, { 0, 0, 1 }, { 0, 0, -1 }, { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 },
+                { 0, -1, 0 } };
         for (int[] off : offsets) {
             int nx = blockCoords.x + off[0];
             int ny = blockCoords.y + off[1];
@@ -463,7 +452,7 @@ public class World implements IAppLogic {
 
             int chunkX = (int) Math.floor((double) nx / Settings.CHUNK_WIDTH);
             int chunkZ = (int) Math.floor((double) nz / Settings.CHUNK_WIDTH);
-            Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+            Chunk chunk = this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
             if (chunk == null) {
                 continue;
             }
@@ -475,6 +464,58 @@ public class World implements IAppLogic {
         }
     }
 
+    private void updateChunks(boolean isInit) {
+        int playerChunkX = (int) Math.floor(this.camera.getPosition().x / Settings.CHUNK_WIDTH);
+        int playerChunkZ = (int) Math.floor(this.camera.getPosition().z / Settings.CHUNK_WIDTH);
+
+        List<Vector2s> neededChunks = new java.util.ArrayList<>();
+
+        for (int x = playerChunkX - Settings.RENDER_DISTANCE; x <= playerChunkX + Settings.RENDER_DISTANCE; x++) {
+            for (int z = playerChunkZ - Settings.RENDER_DISTANCE; z <= playerChunkZ + Settings.RENDER_DISTANCE; z++) {
+                neededChunks.add(new Vector2s(x, z));
+            }
+        }
+
+        List<Vector2s> toRemove = new java.util.ArrayList<>();
+        for (Map.Entry<Vector2s, Chunk> entry : this.chunks.entrySet()) {
+            if (!neededChunks.contains(entry.getKey())) {
+                entry.getValue().removeRenderBlocks(this.scene);
+                toRemove.add(entry.getKey());
+            }
+        }
+        for (Vector2s coord : toRemove) {
+            this.chunks.remove(coord);
+        }
+
+        neededChunks.sort((a, b) -> {
+            int distA = (a.x - playerChunkX) * (a.x - playerChunkX) + (a.y - playerChunkZ) * (a.y - playerChunkZ);
+            int distB = (b.x - playerChunkX) * (b.x - playerChunkX) + (b.y - playerChunkZ) * (b.y - playerChunkZ);
+            return Integer.compare(distA, distB);
+        });
+
+        long startTime = System.nanoTime();
+        long maxTime = 10_000_000L; // 10ms
+
+        for (Vector2s chunkCoords : neededChunks) {
+            if (!this.chunks.containsKey(chunkCoords)) {
+                Chunk chunk = this.generatedChunks.get(chunkCoords);
+                if (chunk == null) {
+                    chunk = new Chunk(chunkCoords.x, chunkCoords.y, seed);
+                    chunk.generate(this.scene);
+                    this.generatedChunks.put(chunkCoords, chunk);
+                } else {
+                    chunk.generateBlocks(this.scene);
+                }
+
+                this.chunks.put(chunkCoords, chunk);
+
+                if (!isInit && (System.nanoTime() - startTime > maxTime)) {
+                    break;
+                }
+            }
+        }
+    }
+
     @Override
     public void cleanup() {
     }
@@ -482,7 +523,8 @@ public class World implements IAppLogic {
     // Creates and starts the game engine, beginning the game loop.
     public void run() {
         String windowName = "MinecraftClone: " + this.name;
-        Engine gameEng = new Engine(windowName, new Window.WindowOptions(), this, Settings.SPAWN_X, Settings.SPAWN_Y, Settings.SPAWN_Z);
+        Engine gameEng = new Engine(windowName, new Window.WindowOptions(), this, Settings.SPAWN_X, Settings.SPAWN_Y,
+                Settings.SPAWN_Z);
         gameEng.start();
     }
 

@@ -35,11 +35,13 @@ public class Chunk {
         this((short) x, (short) z, seed);
     }
 
-    // Populates blockTypes with test data. This will be replaced with noise-based terrain generation later.
+    // Populates blockTypes with test data. This will be replaced with noise-based
+    // terrain generation later.
     public void generate(Scene scene) {
 
         // tree simulation
-        Map<Vector3s, BlockType> treeBlocks = StructureGenerator.generateOakTree(Settings.CHUNK_WIDTH / 2, 1, Settings.CHUNK_WIDTH / 2);
+        Map<Vector3s, BlockType> treeBlocks = StructureGenerator.generateOakTree(Settings.CHUNK_WIDTH / 2, 1,
+                Settings.CHUNK_WIDTH / 2);
         this.blockTypes.putAll(treeBlocks);
         for (int i = 0; i < Settings.CHUNK_WIDTH; i++) {
             for (int j = 0; j < Settings.CHUNK_WIDTH; j++) {
@@ -57,7 +59,8 @@ public class Chunk {
 
         for (Map.Entry<Vector3s, BlockType> entry : this.blockTypes.entrySet()) {
             Vector3s localPos = entry.getKey();
-            actualBlockTypes.put(new Vector3s(localPos.x + xOffset, localPos.y, localPos.z + zOffset), entry.getValue());
+            actualBlockTypes.put(new Vector3s(localPos.x + xOffset, localPos.y, localPos.z + zOffset),
+                    entry.getValue());
         }
 
         return actualBlockTypes;
@@ -99,7 +102,8 @@ public class Chunk {
         }
     }
 
-    // Regenerates a single block's render mesh with updated face culling. Call this on neighbors after a block is broken/placed.
+    // Regenerates a single block's render mesh with updated face culling. Call this
+    // on neighbors after a block is broken/placed.
     public void regenerateBlock(Scene scene, short localX, short localY, short localZ,
             java.util.function.Function<Vector3s, BlockType> getWorldBlock) {
         Vector3s localPos = new Vector3s(localX, localY, localZ);
@@ -140,6 +144,14 @@ public class Chunk {
 
     public void placeBlock(short x, short y, short z, BlockType blockType) {
         this.blockTypes.put(new Vector3s(x, y, z), blockType);
+    }
+
+    public void removeRenderBlocks(Scene scene) {
+        for (Block block : this.renderBlocks.values()) {
+            scene.removeEntity(block.getEntity());
+            scene.removeModel(block.getBlockId() + "-model");
+        }
+        this.renderBlocks.clear();
     }
 
 }

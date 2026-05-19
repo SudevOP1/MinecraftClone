@@ -36,7 +36,7 @@ public class StructureGenerator {
 
         // bottom 2 leaf layer corners (randomized)
         int[][] corners = {
-            {-2, -2}, {-2, 2}, {2, -2}, {2, 2}
+                { -2, -2 }, { -2, 2 }, { 2, -2 }, { 2, 2 }
         };
         for (int[] corner : corners) {
             placeBlockWithChance(blocks, x + corner[0], y + 2, z + corner[1], oakLeaves, 0.7);
@@ -62,7 +62,9 @@ public class StructureGenerator {
 
     private static void placeBlockWithChance(
             Map<Vector3s, BlockType> blocks,
-            int x, int y, int z,
+            int x,
+            int y,
+            int z,
             BlockType type,
             double probability) {
 
