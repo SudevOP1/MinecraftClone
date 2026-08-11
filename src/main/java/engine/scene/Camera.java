@@ -49,6 +49,10 @@ public class Camera {
         this.recalc();
     }
 
+    public void setPosition(Vector3f pos) {
+        this.setPosition(pos.x, pos.y, pos.z);
+    }
+
     public void setRotation(float pitch, float yaw, float roll) {
         this.rotation.set(pitch, yaw, roll);
         this.clampRotation();

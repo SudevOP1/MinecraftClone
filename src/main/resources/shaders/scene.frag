@@ -6,12 +6,19 @@ uniform sampler2D txtSampler;
 
 uniform int isWireframe;
 uniform vec4 wireframeColor;
+uniform int alphaCutout;
 
 void main()
 {
     if (isWireframe == 1) {
         fragColor = wireframeColor;
     } else {
-        fragColor = texture(txtSampler, outTexCoords);
+        vec4 color = texture(txtSampler, outTexCoords);
+        // Cutout materials (leaves) draw in the opaque pass; drop the see-through
+        // texels instead of blending them so draw order stops mattering.
+        if (alphaCutout == 1 && color.a < 0.5) {
+            discard;
+        }
+        fragColor = color;
     }
 }

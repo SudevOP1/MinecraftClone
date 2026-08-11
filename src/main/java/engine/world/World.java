@@ -1,9 +1,11 @@
 package engine.world;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -38,7 +40,7 @@ public class World implements IAppLogic {
 
     public String name;
     public int seed;
-    private GameMode gameMode = GameMode.SURVIVAL;
+    private GameMode gameMode = GameMode.CREATIVE;
     public Map<Vector2s, Chunk> generatedChunks;
     public Map<Vector2s, Chunk> chunks;
     public Camera camera;
@@ -85,6 +87,11 @@ public class World implements IAppLogic {
         this.camera = scene.getCamera();
 
         this.updateChunks(true);
+
+        // set camera to topmost non-air block in the spawn chunk
+        Chunk spawnChunk = this.generatedChunks.get(new Vector2s(0, 0));
+        Vector3f spawnPos = spawnChunk.getSpawnableBlockCoords();
+        this.camera.setPosition(spawnPos);
 
         // generate overlay block render objects for block breaking animation
         for (int i = 0; i < 10; i++) {
@@ -267,7 +274,7 @@ public class World implements IAppLogic {
 
             if (this.coordsToPlaceBlock != null && blockType != null) {
                 this.placeBlock(this.coordsToPlaceBlock, blockType);
-                this.regenerateBlockAndNeighbors(this.coordsToPlaceBlock);
+                this.rebuildChunksAround(this.coordsToPlaceBlock);
 
                 // Decrement item count if survival
                 if (this.gameMode == GameMode.SURVIVAL) {
@@ -304,58 +311,60 @@ public class World implements IAppLogic {
     }
 
     public engine.block.BlockType getBlockAt(int x, int y, int z) {
-        int chunkX = (int) Math.floor((double) x / Settings.CHUNK_WIDTH);
-        int chunkZ = (int) Math.floor((double) z / Settings.CHUNK_WIDTH);
+        if (y < 0 || y >= Settings.CHUNK_HEIGHT) {
+            return null;
+        }
+
+        int chunkX = Math.floorDiv(x, Settings.CHUNK_WIDTH);
+        int chunkZ = Math.floorDiv(z, Settings.CHUNK_WIDTH);
         Chunk chunk = this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
 
         if (chunk == null) {
             return null;
         }
 
-        int localX = x - chunkX * Settings.CHUNK_WIDTH;
-        int localZ = z - chunkZ * Settings.CHUNK_WIDTH;
-
-        // Ensure Y is within chunk's vertical bounds, and X/Z within chunk dimensions
-        if (y < 0 || y >= Settings.CHUNK_WIDTH || localX < 0 || localX >= Settings.CHUNK_WIDTH || localZ < 0
-                || localZ >= Settings.CHUNK_WIDTH) {
-            return null;
-        }
-
-        return chunk.getBlockType((short) localX, (short) y, (short) localZ);
+        return chunk.getBlockType(
+                Math.floorMod(x, Settings.CHUNK_WIDTH),
+                y,
+                Math.floorMod(z, Settings.CHUNK_WIDTH));
     }
 
     public void breakBlock(Vector3s blockCoords) {
-        int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
-        int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
-        Chunk chunk = this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
-
-        if (chunk == null) {
+        if (!this.setBlockAt(blockCoords, null)) {
             return;
         }
 
-        int localX = blockCoords.x - chunkX * Settings.CHUNK_WIDTH;
-        int localZ = blockCoords.z - chunkZ * Settings.CHUNK_WIDTH;
-
-        chunk.removeBlock(this.scene, (short) localX, (short) blockCoords.y, (short) localZ);
         this.lastBlockBreakTime = System.currentTimeMillis();
 
-        // Regenerate the block and its neighbors' meshes for updated face culling
-        this.regenerateBlockAndNeighbors(blockCoords);
+        // Rebuild the affected chunk meshes for updated face culling
+        this.rebuildChunksAround(blockCoords);
     }
 
     public void placeBlock(Vector3s blockCoords, BlockType blockType) {
-        int chunkX = (int) Math.floor((double) blockCoords.x / Settings.CHUNK_WIDTH);
-        int chunkZ = (int) Math.floor((double) blockCoords.z / Settings.CHUNK_WIDTH);
+        this.setBlockAt(blockCoords, blockType);
+    }
+
+    // Writes a block into its owning chunk. Returns false if the chunk isn't
+    // generated or the coordinate is outside the world's vertical range.
+    private boolean setBlockAt(Vector3s blockCoords, BlockType blockType) {
+        if (blockCoords.y < 0 || blockCoords.y >= Settings.CHUNK_HEIGHT) {
+            return false;
+        }
+
+        int chunkX = Math.floorDiv(blockCoords.x, Settings.CHUNK_WIDTH);
+        int chunkZ = Math.floorDiv(blockCoords.z, Settings.CHUNK_WIDTH);
         Chunk chunk = this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
 
         if (chunk == null) {
-            return;
+            return false;
         }
 
-        int localX = blockCoords.x - chunkX * Settings.CHUNK_WIDTH;
-        int localZ = blockCoords.z - chunkZ * Settings.CHUNK_WIDTH;
-
-        chunk.placeBlock((short) localX, (short) blockCoords.y, (short) localZ, blockType);
+        chunk.setBlockType(
+                Math.floorMod(blockCoords.x, Settings.CHUNK_WIDTH),
+                blockCoords.y,
+                Math.floorMod(blockCoords.z, Settings.CHUNK_WIDTH),
+                blockType);
+        return true;
     }
 
     // Uses DDA Voxel Traversal (Digital Differential Analyzer) to find the target
@@ -441,27 +450,61 @@ public class World implements IAppLogic {
         this.coordsToPlaceBlock = null;
     }
 
-    // Regenerates the mesh for a block and its neighbors
-    private void regenerateBlockAndNeighbors(Vector3s blockCoords) {
-        int[][] offsets = { { 0, 0, 0 }, { 0, 0, 1 }, { 0, 0, -1 }, { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 },
-                { 0, -1, 0 } };
-        for (int[] off : offsets) {
-            int nx = blockCoords.x + off[0];
-            int ny = blockCoords.y + off[1];
-            int nz = blockCoords.z + off[2];
+    // Rebuilds the merged mesh of every chunk a block edit can affect: the chunk
+    // owning the block, plus any neighbor chunk it shares a border with.
+    private void rebuildChunksAround(Vector3s blockCoords) {
+        int chunkX = Math.floorDiv(blockCoords.x, Settings.CHUNK_WIDTH);
+        int chunkZ = Math.floorDiv(blockCoords.z, Settings.CHUNK_WIDTH);
+        int localX = Math.floorMod(blockCoords.x, Settings.CHUNK_WIDTH);
+        int localZ = Math.floorMod(blockCoords.z, Settings.CHUNK_WIDTH);
 
-            int chunkX = (int) Math.floor((double) nx / Settings.CHUNK_WIDTH);
-            int chunkZ = (int) Math.floor((double) nz / Settings.CHUNK_WIDTH);
-            Chunk chunk = this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
-            if (chunk == null) {
-                continue;
-            }
-
-            short localX = (short) (nx - chunkX * Settings.CHUNK_WIDTH);
-            short localZ = (short) (nz - chunkZ * Settings.CHUNK_WIDTH);
-
-            chunk.regenerateBlock(this.scene, localX, (short) ny, localZ, pos -> getBlockAt(pos.x, pos.y, pos.z));
+        this.rebuildChunkModel(chunkX, chunkZ);
+        if (localX == 0) {
+            this.rebuildChunkModel(chunkX - 1, chunkZ);
         }
+        if (localX == Settings.CHUNK_WIDTH - 1) {
+            this.rebuildChunkModel(chunkX + 1, chunkZ);
+        }
+        if (localZ == 0) {
+            this.rebuildChunkModel(chunkX, chunkZ - 1);
+        }
+        if (localZ == Settings.CHUNK_WIDTH - 1) {
+            this.rebuildChunkModel(chunkX, chunkZ + 1);
+        }
+    }
+
+    private void rebuildChunkModel(int chunkX, int chunkZ) {
+        Chunk chunk = this.chunks.get(new Vector2s(chunkX, chunkZ));
+        if (chunk == null) {
+            return; // not currently rendered, it will be meshed on load
+        }
+        this.buildChunkModel(chunk, chunkX, chunkZ);
+    }
+
+    private void buildChunkModel(Chunk chunk, int chunkX, int chunkZ) {
+        chunk.buildModel(
+                this.scene,
+                this.getGeneratedChunk(chunkX - 1, chunkZ),
+                this.getGeneratedChunk(chunkX + 1, chunkZ),
+                this.getGeneratedChunk(chunkX, chunkZ - 1),
+                this.getGeneratedChunk(chunkX, chunkZ + 1));
+    }
+
+    private Chunk getGeneratedChunk(int chunkX, int chunkZ) {
+        return this.generatedChunks.get(new Vector2s(chunkX, chunkZ));
+    }
+
+    // Returns the chunk at these coords with its block data filled in, creating
+    // it if needed. Does not touch the scene.
+    private Chunk ensureChunkData(int chunkX, int chunkZ) {
+        Vector2s coords = new Vector2s(chunkX, chunkZ);
+        Chunk chunk = this.generatedChunks.get(coords);
+        if (chunk == null) {
+            chunk = new Chunk(chunkX, chunkZ, this.seed);
+            this.generatedChunks.put(coords, chunk);
+        }
+        chunk.generateData();
+        return chunk;
     }
 
     private void updateChunks(boolean isInit) {
@@ -469,22 +512,25 @@ public class World implements IAppLogic {
         int playerChunkZ = (int) Math.floor(this.camera.getPosition().z / Settings.CHUNK_WIDTH);
 
         List<Vector2s> neededChunks = new java.util.ArrayList<>();
+        Set<Vector2s> neededSet = new java.util.HashSet<>();
 
         for (int x = playerChunkX - Settings.RENDER_DISTANCE; x <= playerChunkX + Settings.RENDER_DISTANCE; x++) {
             for (int z = playerChunkZ - Settings.RENDER_DISTANCE; z <= playerChunkZ + Settings.RENDER_DISTANCE; z++) {
-                neededChunks.add(new Vector2s(x, z));
+                Vector2s coords = new Vector2s(x, z);
+                neededChunks.add(coords);
+                neededSet.add(coords);
             }
         }
 
-        List<Vector2s> toRemove = new java.util.ArrayList<>();
-        for (Map.Entry<Vector2s, Chunk> entry : this.chunks.entrySet()) {
-            if (!neededChunks.contains(entry.getKey())) {
-                entry.getValue().removeRenderBlocks(this.scene);
-                toRemove.add(entry.getKey());
+        // Unload out-of-range chunks. Hash lookup instead of List.contains, which
+        // made this O(chunks * renderDistance^2).
+        Iterator<Map.Entry<Vector2s, Chunk>> loaded = this.chunks.entrySet().iterator();
+        while (loaded.hasNext()) {
+            Map.Entry<Vector2s, Chunk> entry = loaded.next();
+            if (!neededSet.contains(entry.getKey())) {
+                entry.getValue().removeModel(this.scene);
+                loaded.remove();
             }
-        }
-        for (Vector2s coord : toRemove) {
-            this.chunks.remove(coord);
         }
 
         neededChunks.sort((a, b) -> {
@@ -497,21 +543,24 @@ public class World implements IAppLogic {
         long maxTime = 10_000_000L; // 10ms
 
         for (Vector2s chunkCoords : neededChunks) {
-            if (!this.chunks.containsKey(chunkCoords)) {
-                Chunk chunk = this.generatedChunks.get(chunkCoords);
-                if (chunk == null) {
-                    chunk = new Chunk(chunkCoords.x, chunkCoords.y, seed);
-                    chunk.generate(this.scene);
-                    this.generatedChunks.put(chunkCoords, chunk);
-                } else {
-                    chunk.generateBlocks(this.scene);
-                }
+            if (this.chunks.containsKey(chunkCoords)) {
+                continue;
+            }
 
-                this.chunks.put(chunkCoords, chunk);
+            Chunk chunk = this.ensureChunkData(chunkCoords.x, chunkCoords.y);
 
-                if (!isInit && (System.nanoTime() - startTime > maxTime)) {
-                    break;
-                }
+            // Neighbor data must exist before meshing, otherwise every chunk
+            // border is meshed as if it faced open air and stays that way.
+            this.ensureChunkData(chunkCoords.x - 1, chunkCoords.y);
+            this.ensureChunkData(chunkCoords.x + 1, chunkCoords.y);
+            this.ensureChunkData(chunkCoords.x, chunkCoords.y - 1);
+            this.ensureChunkData(chunkCoords.x, chunkCoords.y + 1);
+
+            this.buildChunkModel(chunk, chunkCoords.x, chunkCoords.y);
+            this.chunks.put(chunkCoords, chunk);
+
+            if (!isInit && (System.nanoTime() - startTime > maxTime)) {
+                break;
             }
         }
     }

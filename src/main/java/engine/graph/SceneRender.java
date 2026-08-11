@@ -42,6 +42,8 @@ public class SceneRender {
     private ShaderProgram shaderProgram;
     private UniformsMap uniformsMap;
 
+    private final List<TransparentDraw> transparentDraws = new ArrayList<>();
+
     private int targetBlockVaoId;
     private int targetBlockVboId;
     private int targetBlockVertices;
@@ -70,10 +72,16 @@ public class SceneRender {
 
         Collection<Model> models = scene.getModelMap().values();
         TextureCache textureCache = scene.getTextureCache();
+        int currentAlphaCutout = 0;
+        uniformsMap.setUniform("alphaCutout", 0);
 
-        // First render opaque materials
+        // First render opaque materials (cutout materials belong here too - see
+        // Material.isAlphaCutout)
         for (Model model : models) {
             List<Entity> entities = model.getEntitiesList();
+            if (entities.isEmpty()) {
+                continue;
+            }
 
             for (Material material : model.getMaterialList()) {
                 if (material.isTransparent()) {
@@ -82,6 +90,12 @@ public class SceneRender {
                 Texture texture = textureCache.getTexture(material.getTexturePath());
                 glActiveTexture(GL_TEXTURE0);
                 texture.bind();
+
+                int wantAlphaCutout = material.isAlphaCutout() ? 1 : 0;
+                if (wantAlphaCutout != currentAlphaCutout) {
+                    uniformsMap.setUniform("alphaCutout", wantAlphaCutout);
+                    currentAlphaCutout = wantAlphaCutout;
+                }
 
                 for (Mesh mesh : material.getMeshList()) {
                     glBindVertexArray(mesh.getVaoId());
@@ -93,11 +107,18 @@ public class SceneRender {
             }
         }
 
-        // Collect transparent drawables (material, mesh, entity) to sort and draw
-        // back-to-front
-        List<TransparentDraw> transparentDraws = new ArrayList<>();
+        if (currentAlphaCutout != 0) {
+            uniformsMap.setUniform("alphaCutout", 0);
+        }
+
+        // Collect blended drawables (material, mesh, entity) to sort and draw
+        // back-to-front. Reuses one list across frames to avoid per-frame garbage.
+        transparentDraws.clear();
         for (Model model : models) {
             List<Entity> entities = model.getEntitiesList();
+            if (entities.isEmpty()) {
+                continue;
+            }
             for (Material material : model.getMaterialList()) {
                 if (!material.isTransparent()) {
                     continue;
@@ -113,15 +134,16 @@ public class SceneRender {
         if (!transparentDraws.isEmpty()) {
             // sort by distance from camera (furthest first), forcing block-breaking
             // overlays (destroy_stage_*) to always draw last so they show on top of
-            // other transparent blocks (e.g. oak_leaves) instead of being hidden by them
+            // other transparent blocks instead of being hidden by them
+            final org.joml.Vector3f cameraPosition = scene.getCamera().getPosition();
             transparentDraws.sort((a, b) -> {
                 boolean aOverlay = a.entity.getId().contains("destroy_stage");
                 boolean bOverlay = b.entity.getId().contains("destroy_stage");
                 if (aOverlay != bOverlay) {
                     return aOverlay ? 1 : -1;
                 }
-                float da = scene.getCamera().getPosition().distanceSquared(a.entity.getPosition());
-                float db = scene.getCamera().getPosition().distanceSquared(b.entity.getPosition());
+                float da = cameraPosition.distanceSquared(a.entity.getPosition());
+                float db = cameraPosition.distanceSquared(b.entity.getPosition());
                 return Float.compare(db, da);
             });
 
@@ -188,6 +210,7 @@ public class SceneRender {
         this.uniformsMap.createUniform("txtSampler");
         this.uniformsMap.createUniform("isWireframe");
         this.uniformsMap.createUniform("wireframeColor");
+        this.uniformsMap.createUniform("alphaCutout");
     }
 
     private void initTargetBlockBorder() {

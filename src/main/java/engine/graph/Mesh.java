@@ -16,7 +16,16 @@ public class Mesh {
     private List<Integer> vboIdList; // VBO = Vertex Buffer Object
 
     public Mesh(float[] positions, float textCoords[], int[] indices) {
-        numVertices = indices.length;
+        this(positions, positions.length, textCoords, textCoords.length, indices, indices.length);
+    }
+
+    // Length-aware variant: lets callers pass oversized scratch arrays (e.g. a
+    // chunk mesh builder's growable buffers) without copying them down to size
+    // first.
+    public Mesh(float[] positions, int positionsLength,
+            float[] textCoords, int textCoordsLength,
+            int[] indices, int indicesLength) {
+        numVertices = indicesLength;
         vboIdList = new ArrayList<>();
 
         vaoId = glGenVertexArrays();
@@ -25,8 +34,8 @@ public class Mesh {
         // positions VBO
         int vboId = glGenBuffers();
         vboIdList.add(vboId);
-        FloatBuffer positionsBuffer = MemoryUtil.memAllocFloat(positions.length);
-        positionsBuffer.put(positions).flip();
+        FloatBuffer positionsBuffer = MemoryUtil.memAllocFloat(positionsLength);
+        positionsBuffer.put(positions, 0, positionsLength).flip();
         glBindBuffer(GL_ARRAY_BUFFER, vboId);
         glBufferData(GL_ARRAY_BUFFER, positionsBuffer, GL_STATIC_DRAW);
         glEnableVertexAttribArray(0);
@@ -35,8 +44,8 @@ public class Mesh {
         // texture VBO
         vboId = glGenBuffers();
         vboIdList.add(vboId);
-        FloatBuffer textCoordsBuffer = MemoryUtil.memAllocFloat(textCoords.length);
-        textCoordsBuffer.put(textCoords).flip();
+        FloatBuffer textCoordsBuffer = MemoryUtil.memAllocFloat(textCoordsLength);
+        textCoordsBuffer.put(textCoords, 0, textCoordsLength).flip();
         glBindBuffer(GL_ARRAY_BUFFER, vboId);
         glBufferData(GL_ARRAY_BUFFER, textCoordsBuffer, GL_STATIC_DRAW);
         glEnableVertexAttribArray(1);
@@ -45,8 +54,8 @@ public class Mesh {
         // index VBO
         vboId = glGenBuffers();
         vboIdList.add(vboId);
-        IntBuffer indicesBuffer = MemoryUtil.memAllocInt(indices.length);
-        indicesBuffer.put(indices).flip();
+        IntBuffer indicesBuffer = MemoryUtil.memAllocInt(indicesLength);
+        indicesBuffer.put(indices, 0, indicesLength).flip();
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboId);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL_STATIC_DRAW);
 
