@@ -212,6 +212,11 @@ int worldX = chunk.x * Settings.CHUNK_WIDTH + localX;
 
 Edit `Chunk.generateBlocks()` (terrain, calls `BlockGenerator.getBlockAt()` per world coord), `BlockGenerator.java` (terrain rules), or `StructureGenerator.generateOakTree()` (structures). After changing generation, mesh rebuild happens automatically via `ChunkMesher` — no separate mesh code to touch.
 
+`BlockGenerator` uses `PerlinNoise` (`engine/world/gen/PerlinNoise.java`) for terrain height:
+
+- `PerlinNoise` instance is cached statically per seed (`getNoise()`) — building a new `PerlinNoise` reshuffles a 256-entry permutation table, too costly to do per block.
+- World `x`/`z` are integer block coords; `sample2d` needs fractional lattice input to vary, so callers multiply by `NOISE_SCALE` (0.01) first. Passing raw integer coords makes every octave land exactly on lattice points and `sample2d` returns 0 everywhere (flat world). Lower `NOISE_SCALE` = broader/smoother hills, higher = choppier terrain.
+
 ## Known Design Decisions
 
 - Texture indices start at 1 (not 0) - matches atlas UI layout
