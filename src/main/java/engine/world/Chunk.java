@@ -143,7 +143,7 @@ public class Chunk {
 
     // Fills the block array from the terrain generator. No OpenGL, no scene
     // access - safe to call before the chunk is ever rendered.
-    public void generateData() {
+    public void generateData(int seed) {
         if (this.dataGenerated) {
             return;
         }
@@ -157,7 +157,7 @@ public class Chunk {
                 int worldZ = worldZOffset + localZ;
                 int base = (localX * WIDTH + localZ) * HEIGHT;
                 for (int y = 0; y < HEIGHT; y++) {
-                    this.blocks[base + y] = BlockGenerator.getBlockAt(worldX, y, worldZ);
+                    this.blocks[base + y] = BlockGenerator.getBlockAt(worldX, y, worldZ, seed);
                 }
             }
         }

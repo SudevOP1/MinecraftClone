@@ -503,7 +503,7 @@ public class World implements IAppLogic {
             chunk = new Chunk(chunkX, chunkZ, this.seed);
             this.generatedChunks.put(coords, chunk);
         }
-        chunk.generateData();
+        chunk.generateData(this.seed);
         return chunk;
     }
 
