@@ -1,6 +1,7 @@
 #version 330
 
 in vec2 outTexCoords;
+in float outLight;
 out vec4 fragColor;
 uniform sampler2D txtSampler;
 
@@ -19,6 +20,6 @@ void main()
         if (alphaCutout == 1 && color.a < 0.5) {
             discard;
         }
-        fragColor = color;
+        fragColor = vec4(color.rgb * outLight, color.a);
     }
 }

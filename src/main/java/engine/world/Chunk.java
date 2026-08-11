@@ -201,6 +201,7 @@ public class Chunk {
         material.getMeshList().add(new Mesh(
                 buffer.positions, buffer.positionsLength,
                 buffer.texCoords, buffer.texCoordsLength,
+                buffer.light, buffer.lightLength,
                 buffer.indices, buffer.indicesLength));
         return material;
     }

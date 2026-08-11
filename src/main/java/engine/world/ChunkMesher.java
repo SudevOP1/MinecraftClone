@@ -21,10 +21,12 @@ final class ChunkMesher {
 
         float[] positions = new float[4096];
         float[] texCoords = new float[2048];
+        float[] light = new float[1024];
         int[] indices = new int[2048];
 
         int positionsLength;
         int texCoordsLength;
+        int lightLength;
         int indicesLength;
         int vertexCount;
 
@@ -48,6 +50,15 @@ final class ChunkMesher {
             }
             System.arraycopy(faceTexCoords, face * 8, texCoords, texCoordsLength, 8);
             texCoordsLength += 8;
+
+            if (lightLength + 4 > light.length) {
+                light = grow(light, lightLength + 4);
+            }
+            float brightness = BlockGeometry.FACE_BRIGHTNESS[face];
+            light[lightLength++] = brightness;
+            light[lightLength++] = brightness;
+            light[lightLength++] = brightness;
+            light[lightLength++] = brightness;
 
             if (indicesLength + 6 > indices.length) {
                 indices = grow(indices, indicesLength + 6);

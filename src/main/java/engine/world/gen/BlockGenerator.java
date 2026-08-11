@@ -5,6 +5,7 @@ import engine.block.BlockType;
 
 public class BlockGenerator {
 
+    private static final double NOISE_SCALE = 0.02;
     private static final int OCTAVES = 4;
     private static PerlinNoise noise;
     private static int noiseSeed;
@@ -21,8 +22,6 @@ public class BlockGenerator {
         }
         return noise;
     }
-
-    private static final double NOISE_SCALE = 0.01;
 
     public static BlockType getBlockAt(int x, int y, int z, int seed) {
         int surfaceY = 50 + (int) (getNoise(seed).sample2d(x * NOISE_SCALE, z * NOISE_SCALE) * 30);

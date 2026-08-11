@@ -15,8 +15,9 @@ public class Mesh {
     private int vaoId; // VAO = Vertex Array Object
     private List<Integer> vboIdList; // VBO = Vertex Buffer Object
 
-    public Mesh(float[] positions, float textCoords[], int[] indices) {
-        this(positions, positions.length, textCoords, textCoords.length, indices, indices.length);
+    public Mesh(float[] positions, float textCoords[], float[] light, int[] indices) {
+        this(positions, positions.length, textCoords, textCoords.length, light, light.length, indices,
+                indices.length);
     }
 
     // Length-aware variant: lets callers pass oversized scratch arrays (e.g. a
@@ -24,6 +25,7 @@ public class Mesh {
     // first.
     public Mesh(float[] positions, int positionsLength,
             float[] textCoords, int textCoordsLength,
+            float[] light, int lightLength,
             int[] indices, int indicesLength) {
         numVertices = indicesLength;
         vboIdList = new ArrayList<>();
@@ -51,6 +53,16 @@ public class Mesh {
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
 
+        // light VBO (per-vertex brightness, baked at mesh build time)
+        vboId = glGenBuffers();
+        vboIdList.add(vboId);
+        FloatBuffer lightBuffer = MemoryUtil.memAllocFloat(lightLength);
+        lightBuffer.put(light, 0, lightLength).flip();
+        glBindBuffer(GL_ARRAY_BUFFER, vboId);
+        glBufferData(GL_ARRAY_BUFFER, lightBuffer, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 1, GL_FLOAT, false, 0, 0);
+
         // index VBO
         vboId = glGenBuffers();
         vboIdList.add(vboId);
@@ -66,6 +78,7 @@ public class Mesh {
         // free the buffers
         MemoryUtil.memFree(positionsBuffer);
         MemoryUtil.memFree(textCoordsBuffer);
+        MemoryUtil.memFree(lightBuffer);
         MemoryUtil.memFree(indicesBuffer);
     }
 

@@ -55,6 +55,31 @@ public final class BlockGeometry {
             0, 0, -1 // back
     };
 
+    // Fake directional light: fixed brightness per face direction, baked at mesh
+    // build time. No propagation, no light updates - a constant lookup, so it
+    // costs nothing beyond one extra float per vertex.
+    public static final float[] FACE_BRIGHTNESS = new float[] {
+            0.8f, // front
+            1.0f, // top
+            0.6f, // right
+            0.6f, // left
+            0.4f, // bottom
+            0.8f, // back
+    };
+
+    // Per-vertex brightness matching POSITIONS layout (4 verts/face), for
+    // callers that build a full 24-vertex cube (e.g. single held/dropped blocks).
+    public static final float[] LIGHT = new float[FACE_COUNT * 4];
+
+    static {
+        for (int face = 0; face < FACE_COUNT; face++) {
+            float brightness = FACE_BRIGHTNESS[face];
+            for (int v = 0; v < 4; v++) {
+                LIGHT[face * 4 + v] = brightness;
+            }
+        }
+    }
+
     // Texture coords are identical for every instance of a BlockType, so build
     // them once per type instead of once per block.
     private static final Map<BlockType, float[]> TEX_COORD_CACHE = new ConcurrentHashMap<>();

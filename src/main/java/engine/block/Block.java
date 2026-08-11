@@ -98,7 +98,7 @@ public class Block {
 
         // create mesh with only visible faces
         int[] indices = Helpers.buildIndices(visibleFaces);
-        Mesh mesh = new Mesh(BlockGeometry.POSITIONS, textureCoords, indices);
+        Mesh mesh = new Mesh(BlockGeometry.POSITIONS, textureCoords, BlockGeometry.LIGHT, indices);
         material.getMeshList().add(mesh);
 
         // create model

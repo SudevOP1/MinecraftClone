@@ -95,6 +95,10 @@ Transparent blocks (`hasTransparency`) render **alpha-cutout** (discard on low a
 
 Editing a block (break/place) rebuilds the owning chunk's mesh (and border-adjacent chunks if the edit sits on a chunk edge), not a single block's mesh.
 
+### Lighting
+
+Fake directional (per-face) lighting, not a real light-propagation system: `BlockGeometry.FACE_BRIGHTNESS` assigns a fixed brightness per face direction (top=1.0, front/back=0.8, right/left=0.6, bottom=0.4). `ChunkMesher` bakes that constant into a third per-vertex attribute (`light`, VAO location 2, 1 float/vertex) alongside positions and UVs when it builds a chunk's mesh - no runtime cost, no light updates on block change. `scene.vert` passes `light` through as `outLight`; `scene.frag` multiplies the sampled texture color by it (`fragColor = vec4(color.rgb * outLight, color.a)`). `Mesh.java` now takes a `light` array/length in both constructors, and single-block meshes (`Block.java`) use `BlockGeometry.LIGHT`, a precomputed 24-entry array matching `POSITIONS`.
+
 ### DDA Ray Tracing
 
 `World.calculateTargetBlock()` uses Digital Differential Analyzer voxel traversal for precise block selection (5 block reach). Returns both the hit block and the adjacent empty position for placement.
@@ -225,4 +229,5 @@ Edit `Chunk.generateBlocks()` (terrain, calls `BlockGenerator.getBlockAt()` per 
 - One merged mesh per chunk (opaque + cutout), not one Model/Mesh/Entity per block - see `ChunkMesher.java`
 - Immediate whole-chunk mesh rebuild on block change (breaks/places rebuild the owning chunk + border-adjacent chunks on edge edits)
 - Transparent blocks (leaves, etc.) render alpha-cutout, not alpha-blended, since per-block sort isn't possible once meshes are merged
+- Lighting is a static per-face brightness constant baked into the mesh at build time, not a real light-propagation/light-map system - see "Lighting" above
 - No persistence yet - `World.save()` is a stub
