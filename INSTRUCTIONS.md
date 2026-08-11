@@ -14,16 +14,16 @@ mvn clean install
 mvn exec:java
 ```
 
-## Tech Stack
+## Key Components & Technologies
 
-| Component | Library                    |
-| --------- | -------------------------- |
-| Graphics  | LWJGL 3.3.6 + OpenGL 3.2   |
-| Windowing | GLFW                       |
-| Math      | JOML 1.10.8                |
-| UI        | ImGui (imgui-java 1.86.11) |
-| Logging   | Tinylog 2.6.2              |
-| JSON      | Gson 2.11.0                |
+| Component | Library                       |
+| --------- | ----------------------------- |
+| Graphics  | LWJGL 3.3.6 + OpenGL 3.2      |
+| Windowing | GLFW                          |
+| Math      | JOML 1.10.8                   |
+| UI        | ImGui (imgui-java 1.86.11)    |
+| Logging   | Tinylog 2.6.2 & Custom Logger |
+| JSON      | Gson 2.11.0                   |
 
 ## Project Structure
 
@@ -51,8 +51,8 @@ src/main/resources/
 ├── blocks_data.json    # Block definitions + texture indices
 ├── items_data.json     # Item definitions + icon indices
 └── textures/
-    ├── texture_atlas.png   # 4096x2048, 8x4 grid, 512px tiles
-    └── items_atlas.png     # 2048x512, 8x2 grid, 256px icons
+    ├── texture_atlas.png   # 4096x2048px, 8x4 grid, 512x512px tiles
+    └── items_atlas.png     # 2048x512px, 8x2 grid, 256x256px icons
 ```
 
 ## Coordinate System
