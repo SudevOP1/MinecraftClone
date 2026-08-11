@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A Minecraft clone built with **Java 25** and **LWJGL 3.3.6** (OpenGL 3.2 core profile). Uses a chunk-based voxel world system with face culling optimization.
+A Minecraft clone built with **Java 25** and **LWJGL 3.3.6** (OpenGL 3.2 core profile). Uses a chunk-based voxel world system with face culling and per-chunk merged mesh generation.
 
 ## Quick Commands
 
@@ -30,11 +30,11 @@ mvn exec:java
 ```
 src/main/java/
 ├── engine/
-│   ├── block/          # Block, BlockType, BlockRegistry
+│   ├── block/          # Block, BlockType, BlockRegistry, BlockGeometry
 │   ├── graph/          # Rendering (Mesh, Model, ShaderProgram, Texture, Render)
 │   ├── scene/          # Camera, Entity, Projection, Scene
 │   ├── ui/             # DebugUI, HotbarUI, UIManager
-│   ├── world/          # World, Chunk, player/, gen/
+│   ├── world/          # World, Chunk, ChunkMesher (merged mesh build), player/, gen/
 │   ├── Window.java     # GLFW window wrapper
 │   ├── Engine.java     # Game loop (30 UPS, variable FPS)
 │   └── IAppLogic.java  # Interface for game logic
@@ -85,9 +85,15 @@ Row 4: [25] [26] [27] [28] [29] [30] [31] [32]
 
 See `blocks_data.json` for block-to-texture mappings. Texture rotation (1-4) allows 0°, 90°, 180°, 270° rotations per face.
 
-### Face Culling
+### Face Culling & Chunk Meshing
 
-The `Block` constructor receives a `Function<Vector3s, BlockType>` to query neighbors. Faces adjacent to solid blocks are not rendered. When a block changes, `regenerateBlockAndNeighbors()` updates 7 blocks (center + 6 neighbors).
+Each chunk builds **one merged mesh** (`ChunkMesher.java`) instead of one Model/Mesh/Entity per block — at render distance 3 (~250k blocks) this cuts draw calls from ~250k/frame to <=98/frame (2 draw calls per chunk: opaque + cutout). `ChunkMesher` walks the chunk's flat `BlockType[]` array and, per face, queries the neighbor (`Function<Vector3s, BlockType>`) to skip faces touching solid blocks. Transparent-vs-transparent faces (e.g. leaves next to leaves) are still kept — see [[feedback_no_transparent_face_culling]].
+
+`BlockGeometry.java` caches each `BlockType`'s 6-face texture-atlas UVs on first use (computed once, not per block instance).
+
+Transparent blocks (`hasTransparency`) render **alpha-cutout** (discard on low alpha in `scene.frag`), not alpha-blended — per-block back-to-front sorting isn't possible once faces are merged into one chunk-wide mesh.
+
+Editing a block (break/place) rebuilds the owning chunk's mesh (and border-adjacent chunks if the edit sits on a chunk edge), not a single block's mesh.
 
 ### DDA Ray Tracing
 
@@ -162,9 +168,11 @@ INVENTORY_SIZE = 36  // 9 hotbar + 27 main
 **World to Chunk:**
 
 ```java
-int chunkX = (int) Math.floor((double) worldX / Settings.CHUNK_WIDTH);
-int localX = worldX - chunkX * Settings.CHUNK_WIDTH;
+int chunkX = Math.floorDiv(worldX, Settings.CHUNK_WIDTH);
+int localX = Math.floorMod(worldX, Settings.CHUNK_WIDTH);
 ```
+
+(integer `floorDiv`/`floorMod`, not double division — correct at negative coords, no round-trip through double)
 
 **Chunk to World:**
 
@@ -174,15 +182,17 @@ int worldX = chunk.x * Settings.CHUNK_WIDTH + localX;
 
 ### Important Classes
 
-| Class           | Responsibility                      |
-| --------------- | ----------------------------------- |
-| `World`         | Game logic, input, chunk management |
-| `Chunk`         | Block storage, mesh generation      |
-| `Block`         | Render entity for a single block    |
-| `Scene`         | Entity/model registry, camera       |
-| `Render`        | OpenGL rendering pipeline           |
-| `ShaderProgram` | GLSL shader management              |
-| `BlockRegistry` | JSON block definition loader        |
+| Class           | Responsibility                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------ |
+| `World`         | Game logic, input, chunk management                                                                          |
+| `Chunk`         | Flat `BlockType[]` block storage                                                                             |
+| `ChunkMesher`   | Builds merged opaque/cutout mesh for a chunk                                                                 |
+| `Block`         | Single-block render entity, now only used for destroy-stage overlays (world blocks render via `ChunkMesher`) |
+| `BlockGeometry` | Cached per-BlockType texture UVs                                                                             |
+| `Scene`         | Entity/model registry, camera                                                                                |
+| `Render`        | OpenGL rendering pipeline                                                                                    |
+| `ShaderProgram` | GLSL shader management                                                                                       |
+| `BlockRegistry` | JSON block definition loader                                                                                 |
 
 ## Common Tasks
 
@@ -200,11 +210,14 @@ int worldX = chunk.x * Settings.CHUNK_WIDTH + localX;
 
 ### Modify chunk generation
 
-Edit `Chunk.generate()` or `StructureGenerator.generateOakTree()`
+Edit `Chunk.generateBlocks()` (terrain, calls `BlockGenerator.getBlockAt()` per world coord), `BlockGenerator.java` (terrain rules), or `StructureGenerator.generateOakTree()` (structures). After changing generation, mesh rebuild happens automatically via `ChunkMesher` — no separate mesh code to touch.
 
 ## Known Design Decisions
 
 - Texture indices start at 1 (not 0) - matches atlas UI layout
 - Short-based vectors for chunk/block coords (memory efficiency)
-- Immediate mesh regeneration on block change (simple, works for small scale)
+- Chunk block storage is a flat `BlockType[]` indexed by `(x*WIDTH+z)*HEIGHT+y`, not a map - cache-friendly, no per-block boxing/hashing
+- One merged mesh per chunk (opaque + cutout), not one Model/Mesh/Entity per block - see `ChunkMesher.java`
+- Immediate whole-chunk mesh rebuild on block change (breaks/places rebuild the owning chunk + border-adjacent chunks on edge edits)
+- Transparent blocks (leaves, etc.) render alpha-cutout, not alpha-blended, since per-block sort isn't possible once meshes are merged
 - No persistence yet - `World.save()` is a stub

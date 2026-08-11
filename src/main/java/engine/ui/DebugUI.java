@@ -47,15 +47,18 @@ public class DebugUI {
             direction = "West";
         }
 
+        drawTextWithBg(String.format("FPS: %.1f", ImGui.getIO().getFramerate()));
         drawTextWithBg(String.format("Player X, Y, Z: %.3f, %.3f, %.3f", pos.x, pos.y, pos.z));
-        drawTextWithBg(String.format("Camera Pitch, Yaw, Roll: %.2fdeg, %.2fdeg, %.2fdeg", Math.toDegrees(rot.x), Math.toDegrees(rot.y), Math.toDegrees(rot.z)));
+        drawTextWithBg(String.format("Camera Pitch, Yaw, Roll: %.2fdeg, %.2fdeg, %.2fdeg", Math.toDegrees(rot.x),
+                Math.toDegrees(rot.y), Math.toDegrees(rot.z)));
         drawTextWithBg(String.format("Direction: Facing %s", direction));
 
         Vector3s targetBlock = world.getTargetBlock();
         if (targetBlock != null) {
             BlockType blockType = world.getBlockAt(targetBlock.x, targetBlock.y, targetBlock.z);
             String blockName = blockType != null ? blockType.name : "Unknown";
-            drawTextWithBg(String.format("Target Block: %s (%d, %d, %d)", blockName, targetBlock.x, targetBlock.y, targetBlock.z));
+            drawTextWithBg(String.format("Target Block: %s (%d, %d, %d)", blockName, targetBlock.x, targetBlock.y,
+                    targetBlock.z));
         } else {
             drawTextWithBg("Target Block: None");
         }
@@ -75,8 +78,8 @@ public class DebugUI {
         ImGui.getWindowDrawList().addRectFilled(
                 pos.x - paddingX, pos.y - paddingY,
                 pos.x + size.x + paddingX, pos.y + size.y + paddingY,
-                imgui.ImColor.intToColor(0, 0, 0, 50)
-        );
+                imgui.ImColor.intToColor(0, 0, 0, 50));
         ImGui.text(text);
     }
+
 }

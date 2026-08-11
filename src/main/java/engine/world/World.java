@@ -572,8 +572,9 @@ public class World implements IAppLogic {
     // Creates and starts the game engine, beginning the game loop.
     public void run() {
         String windowName = "MinecraftClone: " + this.name;
-        Engine gameEng = new Engine(windowName, new Window.WindowOptions(), this, Settings.SPAWN_X, Settings.SPAWN_Y,
-                Settings.SPAWN_Z);
+        Engine gameEng = new Engine(windowName, new Window.WindowOptions(), this, Settings.DEFAULT_SPAWN_X,
+                Settings.DEFAULT_SPAWN_Y,
+                Settings.DEFAULT_SPAWN_Z);
         gameEng.start();
     }
 

@@ -7,11 +7,11 @@ public class Settings {
     public static final short WORLD_Y_UPPER_LIMIT = 128;
     public static final short CHUNK_WIDTH = 16;
     public static final short CHUNK_HEIGHT = 50;
-    public static final short RENDER_DISTANCE = 3;
+    public static final short RENDER_DISTANCE = 10;
     public static final float PLAYER_HEIGHT = 2.0f;
-    public static final float SPAWN_X = 0;
-    public static final float SPAWN_Y = PLAYER_HEIGHT + 1;
-    public static final float SPAWN_Z = 0;
+    public static final float DEFAULT_SPAWN_X = 0;
+    public static final float DEFAULT_SPAWN_Y = PLAYER_HEIGHT + 1;
+    public static final float DEFAULT_SPAWN_Z = 0;
 
     // movement
     public static final float MOUSE_SENSITIVITY = 0.1f;
