@@ -38,7 +38,7 @@ public class World implements IAppLogic {
 
     public String name;
     public int seed;
-    private GameMode gameMode = GameMode.CREATIVE;
+    private GameMode gameMode = GameMode.SURVIVAL;
     public Map<Vector2s, Chunk> generatedChunks;
     public Map<Vector2s, Chunk> chunks;
     public Camera camera;

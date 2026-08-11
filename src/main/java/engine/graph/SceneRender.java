@@ -111,8 +111,15 @@ public class SceneRender {
         }
 
         if (!transparentDraws.isEmpty()) {
-            // sort by distance from camera (furthest first)
+            // sort by distance from camera (furthest first), forcing block-breaking
+            // overlays (destroy_stage_*) to always draw last so they show on top of
+            // other transparent blocks (e.g. oak_leaves) instead of being hidden by them
             transparentDraws.sort((a, b) -> {
+                boolean aOverlay = a.entity.getId().contains("destroy_stage");
+                boolean bOverlay = b.entity.getId().contains("destroy_stage");
+                if (aOverlay != bOverlay) {
+                    return aOverlay ? 1 : -1;
+                }
                 float da = scene.getCamera().getPosition().distanceSquared(a.entity.getPosition());
                 float db = scene.getCamera().getPosition().distanceSquared(b.entity.getPosition());
                 return Float.compare(db, da);
