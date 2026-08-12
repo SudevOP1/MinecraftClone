@@ -25,7 +25,18 @@ public class BlockGenerator {
 
     public static BlockType getBlockAt(int x, int y, int z, int seed) {
         int surfaceY = 50 + (int) (getNoise(seed).sample2d(x * NOISE_SCALE, z * NOISE_SCALE) * 30);
-        return (y < surfaceY) ? BlockRegistry.get("stone") : null;
+
+        int dirtDepth = 3 + (int) getNoise(seed).sample2d(x * NOISE_SCALE, z * NOISE_SCALE);
+
+        if (y < surfaceY - dirtDepth) {
+            return BlockRegistry.get("stone");
+        } else if (y < surfaceY) {
+            return BlockRegistry.get("dirt_block");
+        } else if (y == surfaceY) {
+            return BlockRegistry.get("grass_block");
+        } else {
+            return null;
+        }
     }
 
 }
