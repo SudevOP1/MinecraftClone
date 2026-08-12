@@ -44,6 +44,11 @@
       "name": "Oak Leaves",
       "icon": 8,
       "stackSize": 64
+    },
+    "glass_block": {
+      "name": "Glass Block",
+      "icon": 9,
+      "stackSize": 64
     }
   }
 }

@@ -149,6 +149,24 @@
       "hardness": 0.2,
       "isSolid": true
     },
+    "glass_block": {
+      "name": "Glass Block",
+      "texture1": 11,
+      "texture2": 11,
+      "texture3": 11,
+      "texture4": 11,
+      "texture5": 11,
+      "texture6": 11,
+      "textureRotation1": 1,
+      "textureRotation2": 1,
+      "textureRotation3": 1,
+      "textureRotation4": 1,
+      "textureRotation5": 1,
+      "textureRotation6": 1,
+      "hasTransparency": true,
+      "hardness": 0.3,
+      "isSolid": true
+    },
     "destroy_stage_0": {
       "name": "destroy_stage_0",
       "texture": 25,

@@ -113,6 +113,7 @@ public class World implements IAppLogic {
         this.inventory.setItem(4, "oak_log", 64);
         this.inventory.setItem(5, "oak_plank", 64);
         this.inventory.setItem(6, "oak_leaves", 64);
+        this.inventory.setItem(7, "glass_block", 64);
     }
 
     @Override
