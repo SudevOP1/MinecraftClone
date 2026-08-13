@@ -12,6 +12,10 @@ final class ChunkMesher {
     private static final int WIDTH = Settings.CHUNK_WIDTH;
     private static final int HEIGHT = Settings.CHUNK_HEIGHT;
 
+    // Faces are drawn FACE_INFLATE inwards to avoid two faces being rendered
+    // too close to each other and cause visual glitch
+    private static final float FACE_INFLATE = 0.00005f;
+
     private ChunkMesher() {
     }
 
@@ -38,11 +42,16 @@ final class ChunkMesher {
             if (positionsLength + 12 > positions.length) {
                 positions = grow(positions, positionsLength + 12);
             }
+            int n = face * 3;
+            float nx = ox - BlockGeometry.FACE_OFFSETS[n] * FACE_INFLATE;
+            float ny = oy - BlockGeometry.FACE_OFFSETS[n + 1] * FACE_INFLATE;
+            float nz = oz - BlockGeometry.FACE_OFFSETS[n + 2] * FACE_INFLATE;
+
             int p = face * 12;
             for (int i = 0; i < 12; i += 3) {
-                positions[positionsLength++] = BlockGeometry.POSITIONS[p + i] + ox;
-                positions[positionsLength++] = BlockGeometry.POSITIONS[p + i + 1] + oy;
-                positions[positionsLength++] = BlockGeometry.POSITIONS[p + i + 2] + oz;
+                positions[positionsLength++] = BlockGeometry.POSITIONS[p + i] + nx;
+                positions[positionsLength++] = BlockGeometry.POSITIONS[p + i + 1] + ny;
+                positions[positionsLength++] = BlockGeometry.POSITIONS[p + i + 2] + nz;
             }
 
             if (texCoordsLength + 8 > texCoords.length) {
@@ -130,9 +139,11 @@ final class ChunkMesher {
                                 y + BlockGeometry.FACE_OFFSETS[o + 1],
                                 lz + BlockGeometry.FACE_OFFSETS[o + 2]);
 
-                        // Faces between two transparent blocks stay visible on
-                        // purpose (leaves need their inner faces).
-                        if (neighbor == null || neighbor.hasTransparency) {
+                        // Transparent blocks never cull: their own faces stay
+                        // visible against anything, opaque neighbors included,
+                        // and faces between two transparent blocks are kept too
+                        // (leaves need their inner faces).
+                        if (neighbor == null || neighbor.hasTransparency || type.hasTransparency) {
                             target.addFace(face, lx, y, lz, faceTexCoords);
                         }
                     }
