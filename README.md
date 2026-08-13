@@ -2,6 +2,14 @@
 
 A Minecraft clone built with **Java 25** and **LWJGL 3.3.6** (OpenGL 3.2 core profile). Uses a chunk-based voxel world system with face culling optimization and procedural generation using Perlin Noise.
 
+## Key Features
+
+- Chunk-based voxel world system
+- Block breaking and placing
+- Hotbar to switch blocks
+- Face culling optimization (~99.83% fewer faces to be rendered)
+- Procedural generation using Perlin Noise
+
 ## Build & Run
 
 ### Dependencies:
