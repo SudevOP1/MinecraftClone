@@ -1,6 +1,6 @@
-# MinecraftClone (Java + LWJGL 3)
+# MinecraftClone
 
-A chunk-based voxel world. Each chunk builds one merged mesh (instead of one draw call per block), so a full render-distance world stays under ~100 draw calls per frame. Faces are shaded with fixed per-direction brightness (top brightest, bottom darkest) - cheap, baked-in lighting with no runtime light propagation.
+A Minecraft clone built with **Java 25** and **LWJGL 3.3.6** (OpenGL 3.2 core profile). Uses a chunk-based voxel world system with face culling optimization and procedural generation using Perlin Noise.
 
 ## Build & Run
 
