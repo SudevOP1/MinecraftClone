@@ -38,3 +38,4 @@ mvn exec:java
 | `F2`          | take screenshot                 |
 | `F3`          | toggle debug GUI mode           |
 | `F4`          | toggle wireframe mode           |
+| `1` - `9`     | toggle selected hotbar slot     |

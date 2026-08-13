@@ -9,6 +9,15 @@ import java.util.Set;
 
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_1;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_2;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_3;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_4;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_5;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_6;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_7;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_8;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_9;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F2;
@@ -169,6 +178,35 @@ public class World implements IAppLogic {
             }
         } else {
             this.f4Pressed = false;
+        }
+
+        // Numbers 1-9 to toggle selected hotbar slot
+        if (window.isKeyPressed(GLFW_KEY_1)) {
+            this.inventory.setSelectedSlot(0);
+        }
+        if (window.isKeyPressed(GLFW_KEY_2)) {
+            this.inventory.setSelectedSlot(1);
+        }
+        if (window.isKeyPressed(GLFW_KEY_3)) {
+            this.inventory.setSelectedSlot(2);
+        }
+        if (window.isKeyPressed(GLFW_KEY_4)) {
+            this.inventory.setSelectedSlot(3);
+        }
+        if (window.isKeyPressed(GLFW_KEY_5)) {
+            this.inventory.setSelectedSlot(4);
+        }
+        if (window.isKeyPressed(GLFW_KEY_6)) {
+            this.inventory.setSelectedSlot(5);
+        }
+        if (window.isKeyPressed(GLFW_KEY_7)) {
+            this.inventory.setSelectedSlot(6);
+        }
+        if (window.isKeyPressed(GLFW_KEY_8)) {
+            this.inventory.setSelectedSlot(7);
+        }
+        if (window.isKeyPressed(GLFW_KEY_9)) {
+            this.inventory.setSelectedSlot(8);
         }
 
         // Looking around using mouse
