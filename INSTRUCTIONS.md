@@ -87,7 +87,7 @@ See `blocks_data.json` for block-to-texture mappings. Texture rotation (1-4) all
 
 ### Face Culling & Chunk Meshing
 
-Each chunk builds **one merged mesh** (`ChunkMesher.java`) instead of one Model/Mesh/Entity per block — at render distance 3 (~250k blocks) this cuts draw calls from ~250k/frame to <=98/frame (2 draw calls per chunk: opaque + cutout). `ChunkMesher` walks the chunk's flat `BlockType[]` array and, per face, queries the neighbor (`Function<Vector3s, BlockType>`) to skip faces touching solid blocks. Transparent-vs-transparent faces (e.g. leaves next to leaves) are still kept — see [[feedback_no_transparent_face_culling]].
+Each chunk builds **one merged mesh** (`ChunkMesher.java`) instead of one Model/Mesh/Entity per block — at render distance 3 (~250k blocks) this cuts draw calls from ~250k/frame to <=98/frame (2 draw calls per chunk: opaque + cutout). `ChunkMesher` walks the chunk's flat `BlockType[]` array and, per face, queries the neighbor (`Function<Vector3s, BlockType>`) to skip faces touching solid blocks. Transparent-vs-transparent faces (e.g. leaves next to leaves) are still kept — see [[feedback_no_transparent_face_culling]]. The one exception is a `glass_block`-`glass_block` face, which is culled (`ChunkMesher.isGlassPair`).
 
 `BlockGeometry.java` caches each `BlockType`'s 6-face texture-atlas UVs on first use (computed once, not per block instance).
 

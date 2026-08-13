@@ -142,7 +142,12 @@ final class ChunkMesher {
                         // Transparent blocks never cull: their own faces stay
                         // visible against anything, opaque neighbors included,
                         // and faces between two transparent blocks are kept too
-                        // (leaves need their inner faces).
+                        // (leaves need their inner faces). Glass is the one
+                        // exception: a glass-glass face is invisible anyway, so
+                        // it is dropped.
+                        if (isGlassPair(type, neighbor)) {
+                            continue;
+                        }
                         if (neighbor == null || neighbor.hasTransparency || type.hasTransparency) {
                             target.addFace(face, lx, y, lz, faceTexCoords);
                         }
@@ -152,6 +157,10 @@ final class ChunkMesher {
         }
 
         return result;
+    }
+
+    private static boolean isGlassPair(BlockType type, BlockType neighbor) {
+        return neighbor != null && type.codename.equals("glass_block") && neighbor.codename.equals("glass_block");
     }
 
     // Only ever called with at most one axis out of range, since face offsets
