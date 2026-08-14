@@ -336,7 +336,17 @@ public class World implements IAppLogic {
             // Place Block
             BlockType blockType = this.inventory.getSelectedBlockType();
 
-            if (this.coordsToPlaceBlock != null && blockType != null) {
+            // A solid block may not be placed that intersects with the player's hitbox.
+            boolean blockedByPlayer = blockType != null
+                    && blockType.isSolid
+                    && this.gameMode != GameMode.SPECTATOR
+                    && this.coordsToPlaceBlock != null
+                    && this.camera.intersectsBlock(
+                            this.coordsToPlaceBlock.x,
+                            this.coordsToPlaceBlock.y,
+                            this.coordsToPlaceBlock.z);
+
+            if (this.coordsToPlaceBlock != null && blockType != null && !blockedByPlayer) {
                 this.placeBlock(this.coordsToPlaceBlock, blockType);
                 this.rebuildChunksAround(this.coordsToPlaceBlock);
 
