@@ -56,10 +56,11 @@ public class World implements IAppLogic {
     private Scene scene;
     private Inventory inventory;
 
+    private long lastInputTime = 0;
     private long blockBreakingStartTime = 0;
     private long lastBlockBreakTime = 0;
     private Vector3s breakingTargetBlock;
-    private engine.block.Block[] destroyOverlays = new engine.block.Block[10];
+    private final engine.block.Block[] destroyOverlays = new engine.block.Block[10];
     private Vector3s targetBlock;
     private Vector3s coordsToPlaceBlock;
 
@@ -128,27 +129,35 @@ public class World implements IAppLogic {
     @Override
     public void input(Window window, Scene scene, long diffTimeMillis, Render render) {
 
-        float move = diffTimeMillis * Settings.MOVEMENT_SPEED;
+        // Seconds since the last input call. Measured with nanoTime to give consistent
+        // deltas for frame rate independent movement.
+        long now = System.nanoTime();
+        if (this.lastInputTime == 0) {
+            this.lastInputTime = now;
+        }
+        float deltaTime = (now - this.lastInputTime) / 1_000_000_000.0f;
+        this.lastInputTime = now;
 
         // WASD, space, shift movement
         if (window.isKeyPressed(GLFW_KEY_W)) {
-            this.camera.moveForward(move);
+            this.camera.moveForward();
         }
         if (window.isKeyPressed(GLFW_KEY_S)) {
-            this.camera.moveForward(-move);
+            this.camera.moveBackward();
         }
         if (window.isKeyPressed(GLFW_KEY_A)) {
-            this.camera.moveLeft(move);
+            this.camera.moveLeft();
         }
         if (window.isKeyPressed(GLFW_KEY_D)) {
-            this.camera.moveRight(move);
+            this.camera.moveRight();
         }
         if (window.isKeyPressed(GLFW_KEY_SPACE)) {
-            this.camera.moveUp(move);
+            this.camera.moveUp();
         }
         if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
-            this.camera.moveUp(-move);
+            this.camera.moveDown();
         }
+        this.camera.updateMovement(deltaTime);
 
         // F2 to take screenshot
         if (window.isKeyPressed(GLFW_KEY_F2)) {

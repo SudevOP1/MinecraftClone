@@ -3,11 +3,17 @@ package engine.scene;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
+import game.Settings;
+
 public class Camera {
 
     private Vector3f position;
     private Vector3f rotation;
+    private Vector3f velocity = new Vector3f();
     private Matrix4f viewMatrix = new Matrix4f();
+
+    private Vector3f moveInput = new Vector3f();
+    private Vector3f rquestedDir = new Vector3f();
 
     // computed direction vectors
     private Vector3f forward = new Vector3f();
@@ -119,23 +125,92 @@ public class Camera {
                 this.up);
     }
 
-    public void moveForward(float amt) {
-        this.position.add(this.forward.x * amt, this.forward.y * amt, this.forward.z * amt);
-        this.recalc();
+    public Vector3f getVelocity() {
+        return this.velocity;
     }
 
-    public void moveLeft(float amt) {
-        this.position.sub(this.right.x * amt, this.right.y * amt, this.right.z * amt);
-        this.recalc();
+    // The move methods only record what the player asked for this frame.
+    // updateMovement() turns that request into acceleration and moves the camera.
+
+    public void moveForward() {
+        this.moveInput.z += 1;
     }
 
-    public void moveRight(float amt) {
-        this.position.add(this.right.x * amt, this.right.y * amt, this.right.z * amt);
-        this.recalc();
+    public void moveBackward() {
+        this.moveInput.z -= 1;
     }
 
-    public void moveUp(float amt) {
-        this.position.add(0, amt, 0);
+    public void moveLeft() {
+        this.moveInput.x -= 1;
+    }
+
+    public void moveRight() {
+        this.moveInput.x += 1;
+    }
+
+    public void moveUp() {
+        this.moveInput.y += 1;
+    }
+
+    public void moveDown() {
+        this.moveInput.y -= 1;
+    }
+
+    // Accelerates towards the requested direction, applies drag, then integrates
+    // the position. deltaTime is in seconds, so movement is frame rate independent.
+    public void updateMovement(float deltaTime) {
+        if (deltaTime > Settings.MAX_DELTA_TIME) {
+            deltaTime = Settings.MAX_DELTA_TIME;
+        }
+        if (deltaTime <= 0) {
+            this.moveInput.zero();
+            return;
+        }
+
+        // Build the requested direction in world space. Forward/right follow where the
+        // camera is looking, up/down are always along the world Y axis.
+        this.rquestedDir.zero();
+        if (this.moveInput.z != 0) {
+            this.rquestedDir.fma(this.moveInput.z, this.forward);
+        }
+        if (this.moveInput.x != 0) {
+            this.rquestedDir.fma(this.moveInput.x, this.right);
+        }
+        if (this.moveInput.y != 0) {
+            this.rquestedDir.y += this.moveInput.y;
+        }
+        if (this.rquestedDir.lengthSquared() > 0) {
+            this.rquestedDir.normalize();
+        }
+        this.moveInput.zero();
+
+        // Accelerate, then bleed off speed exponentially so the decay rate does not
+        // depend on how many frames were rendered this second.
+        this.velocity.fma(Settings.MOVE_ACCELERATION * deltaTime, this.rquestedDir);
+        this.velocity.mul((float) java.lang.Math.pow(Settings.MOVE_DAMPING, deltaTime));
+
+        // Clamp horizontal and vertical speed separately, like creative flight does
+        float horizontalSpeed = (float) java.lang.Math
+                .sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
+        if (horizontalSpeed > Settings.MAX_HORIZONTAL_SPEED) {
+            float scale = Settings.MAX_HORIZONTAL_SPEED / horizontalSpeed;
+            this.velocity.x *= scale;
+            this.velocity.z *= scale;
+        }
+        if (this.velocity.y > Settings.MAX_VERTICAL_SPEED) {
+            this.velocity.y = Settings.MAX_VERTICAL_SPEED;
+        }
+        if (this.velocity.y < -Settings.MAX_VERTICAL_SPEED) {
+            this.velocity.y = -Settings.MAX_VERTICAL_SPEED;
+        }
+
+        // Stop drifting forever once the velocity is small enough to be invisible
+        if (this.velocity.lengthSquared() < 1e-6f) {
+            this.velocity.zero();
+            return;
+        }
+
+        this.position.fma(deltaTime, this.velocity);
         this.recalc();
     }
 

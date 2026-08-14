@@ -13,9 +13,15 @@ public class Settings {
     public static final float DEFAULT_SPAWN_Y = PLAYER_HEIGHT + 1;
     public static final float DEFAULT_SPAWN_Z = 0;
 
-    // movement
+    // movement (all speeds/accelerations are in blocks per second, frame rate independent)
     public static final float MOUSE_SENSITIVITY = 0.1f;
-    public static final float MOVEMENT_SPEED = 0.005f;
+    public static final float MOVE_ACCELERATION = 45.0f;
+    public static final float MAX_HORIZONTAL_SPEED = 11.0f;
+    public static final float MAX_VERTICAL_SPEED = 9.0f;
+    // fraction of the velocity that survives after one full second of no input
+    public static final float MOVE_DAMPING = 0.02f;
+    // largest delta time a single frame may apply, stops lag spikes from teleporting the player
+    public static final float MAX_DELTA_TIME = 0.1f;
 
     // blocks
     public static final float MAX_BLOCK_REACH = 5.0f;
