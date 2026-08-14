@@ -23,6 +23,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F2;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F3;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F4;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
@@ -49,7 +50,7 @@ public class World implements IAppLogic {
 
     public String name;
     public int seed;
-    private GameMode gameMode = GameMode.CREATIVE;
+    private GameMode gameMode = GameMode.SPECTATOR;
     public Map<Vector2s, Chunk> generatedChunks;
     public Map<Vector2s, Chunk> chunks;
     public Camera camera;
@@ -171,6 +172,9 @@ public class World implements IAppLogic {
         this.spacePressed = spaceDown;
         if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
             this.camera.moveDown();
+        }
+        if (window.isKeyPressed(GLFW_KEY_LEFT_CONTROL)) {
+            this.camera.requestSprint();
         }
         this.camera.updateMovement(this.gameMode, deltaTime);
 

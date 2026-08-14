@@ -30,6 +30,8 @@ public class Camera {
 
     private boolean isFlying = false;
     private boolean onGround = false;
+    private boolean sprintRequested = false; // left control held this frame
+    private boolean sprinting = false; // sprint request that actually passed its conditions
     private SolidBlockChecker solidBlockChecker;
     private long lastJumpKeyPressNanos = 0;
 
@@ -203,6 +205,14 @@ public class Camera {
         this.moveInput.y -= 1;
     }
 
+    public void requestSprint() {
+        this.sprintRequested = true;
+    }
+
+    public boolean isSprinting() {
+        return this.sprinting;
+    }
+
     // Turns this frame's movement request into velocity, then integrates it into a
     // position, resolving collisions on the way. deltaTime is in seconds, so
     // movement is frame rate independent.
@@ -226,13 +236,20 @@ public class Camera {
 
         boolean jumping = this.moveInput.y > 0;
         boolean sneaking = this.moveInput.y < 0;
+        // While flying any direction may be sprinted in, while walking the player has
+        // to be running forwards instead of sneaking or strafing backwards
+        this.sprinting = this.sprintRequested
+                && (this.isFlying
+                        ? this.moveInput.lengthSquared() > 0
+                        : !sneaking && this.moveInput.z > 0);
+        this.sprintRequested = false;
         this.buildRequestedDirection();
         this.moveInput.zero();
 
         if (this.isFlying) {
-            this.applyFlyingPhysics(deltaTime);
+            this.applyFlyingPhysics(deltaTime, this.sprinting);
         } else {
-            this.applyWalkingPhysics(deltaTime, jumping, sneaking);
+            this.applyWalkingPhysics(deltaTime, jumping, sneaking, this.sprinting);
         }
 
         // Stop drifting forever once the velocity is small enough to be invisible
@@ -280,33 +297,43 @@ public class Camera {
 
     // Accelerate, then bleed off speed exponentially so the decay rate does not
     // depend on how many frames were rendered this second.
-    private void applyFlyingPhysics(float deltaTime) {
-        this.velocity.fma(Settings.MOVE_ACCELERATION * deltaTime, this.rquestedDir);
+    private void applyFlyingPhysics(float deltaTime, boolean sprinting) {
+        float acceleration = sprinting
+                ? Settings.MOVE_ACCELERATION * Settings.FLY_SPRINT_ACCELERATION_MULTIPLIER
+                : Settings.MOVE_ACCELERATION;
+        this.velocity.fma(acceleration * deltaTime, this.rquestedDir);
         this.velocity.mul((float) java.lang.Math.pow(Settings.MOVE_DAMPING, deltaTime));
+
+        float speedMultiplier = sprinting ? Settings.FLY_SPRINT_SPEED_MULTIPLIER : 1.0f;
+        float maxHorizontalSpeed = Settings.MAX_HORIZONTAL_SPEED * speedMultiplier;
+        float maxVerticalSpeed = Settings.MAX_VERTICAL_SPEED * speedMultiplier;
 
         // Clamp horizontal and vertical speed separately, like creative flight does
         float horizontalSpeed = (float) java.lang.Math
                 .sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
-        if (horizontalSpeed > Settings.MAX_HORIZONTAL_SPEED) {
-            float scale = Settings.MAX_HORIZONTAL_SPEED / horizontalSpeed;
+        if (horizontalSpeed > maxHorizontalSpeed) {
+            float scale = maxHorizontalSpeed / horizontalSpeed;
             this.velocity.x *= scale;
             this.velocity.z *= scale;
         }
-        if (this.velocity.y > Settings.MAX_VERTICAL_SPEED) {
-            this.velocity.y = Settings.MAX_VERTICAL_SPEED;
+        if (this.velocity.y > maxVerticalSpeed) {
+            this.velocity.y = maxVerticalSpeed;
         }
-        if (this.velocity.y < -Settings.MAX_VERTICAL_SPEED) {
-            this.velocity.y = -Settings.MAX_VERTICAL_SPEED;
+        if (this.velocity.y < -maxVerticalSpeed) {
+            this.velocity.y = -maxVerticalSpeed;
         }
     }
 
     // Horizontal movement is accelerated and damped, vertical movement is a jump
     // impulse plus constant gravity. Air control is deliberately weak so a jump
     // mostly keeps the momentum it started with.
-    private void applyWalkingPhysics(float deltaTime, boolean jumping, boolean sneaking) {
+    private void applyWalkingPhysics(float deltaTime, boolean jumping, boolean sneaking, boolean sprinting) {
         float acceleration = this.onGround
                 ? Settings.WALK_ACCELERATION
                 : Settings.WALK_ACCELERATION * Settings.AIR_CONTROL;
+        if (sprinting) {
+            acceleration *= Settings.SPRINT_ACCELERATION_MULTIPLIER;
+        }
         this.velocity.x += this.rquestedDir.x * acceleration * deltaTime;
         this.velocity.z += this.rquestedDir.z * acceleration * deltaTime;
 
@@ -315,9 +342,12 @@ public class Camera {
         this.velocity.x *= decay;
         this.velocity.z *= decay;
 
-        float maxSpeed = sneaking
-                ? Settings.MAX_WALK_SPEED * Settings.SNEAK_SPEED_MULTIPLIER
-                : Settings.MAX_WALK_SPEED;
+        float maxSpeed = Settings.MAX_WALK_SPEED;
+        if (sneaking) {
+            maxSpeed *= Settings.SNEAK_SPEED_MULTIPLIER;
+        } else if (sprinting) {
+            maxSpeed *= Settings.SPRINT_SPEED_MULTIPLIER;
+        }
         float horizontalSpeed = (float) java.lang.Math
                 .sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
         if (horizontalSpeed > maxSpeed) {
