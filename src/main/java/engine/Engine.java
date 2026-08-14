@@ -16,21 +16,6 @@ public class Engine {
     private int targetUps;
     private UIManager uiManager;
 
-    public Engine(String windowTitle, Window.WindowOptions opts, IAppLogic appLogic) {
-        this.window = new Window(windowTitle, opts, () -> {
-            this.resize();
-            return null;
-        });
-        this.targetFps = opts.fps;
-        this.targetUps = opts.ups;
-        this.appLogic = appLogic;
-        this.render = new Render();
-        this.scene = new Scene(this.window.getWidth(), this.window.getHeight());
-        this.appLogic.init(this.window, scene, render);
-        this.uiManager = new UIManager(this.window);
-        this.running = true;
-    }
-
     public Engine(String windowTitle, Window.WindowOptions opts, IAppLogic appLogic, float x, float y, float z) {
         this.window = new Window(windowTitle, opts, () -> {
             this.resize();
@@ -44,6 +29,10 @@ public class Engine {
         this.appLogic.init(this.window, scene, render);
         this.uiManager = new UIManager(this.window);
         this.running = true;
+    }
+
+    public Engine(String windowTitle, Window.WindowOptions opts, IAppLogic appLogic) {
+        this(windowTitle, opts, appLogic, 0, 0, 0);
     }
 
     public void start() {

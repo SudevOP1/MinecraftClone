@@ -2,6 +2,7 @@ package engine.ui;
 
 import engine.Window;
 import engine.world.World;
+import engine.world.player.GameMode;
 import imgui.ImGui;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
@@ -16,7 +17,7 @@ public class UIManager {
 
     public UIManager(Window window) {
         ImGui.createContext();
-        
+
         // Attempt to load font, but don't fail if it's missing
         try {
             ImGui.getIO().getFonts().addFontFromFileTTF("src/main/resources/font/Minecraft.ttf", 20.0f);
@@ -37,10 +38,15 @@ public class UIManager {
         imGuiGlfw.newFrame();
         ImGui.newFrame();
 
+        // F3 debug UI
         if (world.isF3Pressed()) {
             debugUI.render(world);
         }
-        hotbarUI.render(world, window);
+
+        // hotbar ui
+        if (world.getGameMode() != GameMode.SPECTATOR) {
+            hotbarUI.render(world, window);
+        }
 
         ImGui.render();
         imGuiGl3.renderDrawData(ImGui.getDrawData());
