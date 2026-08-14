@@ -7,6 +7,7 @@ A Minecraft clone built with **Java 25** and **LWJGL 3.3.6** (OpenGL 3.2 core pr
 - Chunk-based voxel world system
 - Block breaking and placing
 - Hotbar to switch blocks
+- Multiple Gamemodes (Creative, Survival, Spectator)
 - Face culling optimization (~99.83% fewer faces to be rendered)
 - Procedural generation using Perlin Noise
 
@@ -31,19 +32,21 @@ mvn exec:java
 
 ## 🛠️ Controls
 
-| Key           | Control                         |
-| ------------- | ------------------------------- |
-| `Move Mouse`  | look around                     |
-| `Left Click`  | break block                     |
-| `Right Click` | place block                     |
-| `Scroll`      | switch selected block in hotbar |
-| `W`           | move forward                    |
-| `A`           | move left                       |
-| `S`           | move behind                     |
-| `D`           | move right                      |
-| `Space`       | move up                         |
-| `Left Shift`  | move down                       |
-| `F2`          | take screenshot                 |
-| `F3`          | toggle debug GUI mode           |
-| `F4`          | toggle wireframe mode           |
-| `1` - `9`     | toggle selected hotbar slot     |
+| Key           | Control                                                             |
+| ------------- | ------------------------------------------------------------------- |
+| `Move Mouse`  | look around                                                         |
+| `Left Click`  | break block                                                         |
+| `Right Click` | place block                                                         |
+| `Scroll`      | switch selected block in hotbar                                     |
+| `W`           | move forward                                                        |
+| `A`           | move left                                                           |
+| `S`           | move behind                                                         |
+| `D`           | move right                                                          |
+| `Space`       | move up                                                             |
+| `Left Shift`  | move down                                                           |
+| `Left Ctrl`   | sprint                                                              |
+| `F1` (hold)   | opens gamemode selector, move mouse to pick, release `F1` to switch |
+| `F2`          | take screenshot                                                     |
+| `F3`          | toggle debug GUI mode                                               |
+| `F4`          | toggle wireframe mode                                               |
+| `1` - `9`     | toggle selected hotbar slot                                         |

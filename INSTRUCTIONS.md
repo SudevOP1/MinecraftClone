@@ -22,6 +22,7 @@ mvn exec:java
 | Windowing | GLFW                          |
 | Math      | JOML 1.10.8                   |
 | UI        | ImGui (imgui-java 1.86.11)    |
+| SVG icons | NanoSVG (lwjgl-nanovg 3.3.6)  |
 | Logging   | Tinylog 2.6.2 & Custom Logger |
 | JSON      | Gson 2.11.0                   |
 
@@ -31,9 +32,9 @@ mvn exec:java
 src/main/java/
 ├── engine/
 │   ├── block/          # Block, BlockType, BlockRegistry, BlockGeometry
-│   ├── graph/          # Rendering (Mesh, Model, ShaderProgram, Texture, Render)
+│   ├── graph/          # Rendering (Mesh, Model, ShaderProgram, Texture, SvgLoader, Render)
 │   ├── scene/          # Camera, Entity, Projection, Scene
-│   ├── ui/             # DebugUI, HotbarUI, UIManager
+│   ├── ui/             # DebugUI, HotbarUI, GameModeUI, UIManager
 │   ├── world/          # World, Chunk, ChunkMesher (merged mesh build), player/, gen/
 │   ├── Window.java     # GLFW window wrapper
 │   ├── Engine.java     # Game loop (30 UPS, variable FPS)
@@ -50,6 +51,10 @@ src/main/java/
 src/main/resources/
 ├── blocks_data.json    # Block definitions + texture indices
 ├── items_data.json     # Item definitions + icon indices
+├── icons/              # UI icons as SVG (white strokes, rasterized at runtime)
+│   ├── survival_icon.svg
+│   ├── creative_icon.svg
+│   └── spectator_icon.svg
 └── textures/
     ├── texture_atlas.png   # 4096x2048px, 8x4 grid, 512x512px tiles
     └── items_atlas.png     # 2048x512px, 8x2 grid, 256x256px icons
@@ -99,6 +104,12 @@ Editing a block (break/place) rebuilds the owning chunk's mesh (and border-adjac
 
 Fake directional (per-face) lighting, not a real light-propagation system: `BlockGeometry.FACE_BRIGHTNESS` assigns a fixed brightness per face direction (top=1.0, front/back=0.8, right/left=0.6, bottom=0.4). `ChunkMesher` bakes that constant into a third per-vertex attribute (`light`, VAO location 2, 1 float/vertex) alongside positions and UVs when it builds a chunk's mesh - no runtime cost, no light updates on block change. `scene.vert` passes `light` through as `outLight`; `scene.frag` multiplies the sampled texture color by it (`fragColor = vec4(color.rgb * outLight, color.a)`). `Mesh.java` now takes a `light` array/length in both constructors, and single-block meshes (`Block.java`) use `BlockGeometry.LIGHT`, a precomputed 24-entry array matching `POSITIONS`.
 
+### Gamemode Selector
+
+Holding `F1` opens a radial-less selector panel drawn by `GameModeUI` (`World.gameModeMenuOpen`). While it is open the horizontal mouse delta moves a virtual cursor (`World.gameModeCursorX`, clamped to the outermost buttons) instead of rotating the camera, and block break/place is suppressed. The cursor starts on the current gamemode, so releasing `F1` without moving the mouse is a no-op; otherwise the selected mode is applied on release.
+
+Icons are SVG (`src/main/resources/icons/`), rasterized once on first render by `SvgLoader.load()` (NanoSVG) into a `GL_LINEAR` texture at `GAMEMODE_ICON_SUPERSAMPLE`x the on screen size, then drawn with `ImDrawList.addImage()` tinted by `GAMEMODE_ICON_COLOR`. The SVGs are stroke-only (`fill="none"` on the root, inherited by NanoSVG), so the panel shows through them. `GameModeUI.cleanup()` (called from `UIManager.cleanup()`) frees the textures.
+
 ### DDA Ray Tracing
 
 `World.calculateTargetBlock()` uses Digital Differential Analyzer voxel traversal for precise block selection (5 block reach). Returns both the hit block and the adjacent empty position for placement.
@@ -122,6 +133,8 @@ Fake directional (per-face) lighting, not a real light-propagation system: `Bloc
 | WASD        | Move horizontal  |
 | Space       | Move up          |
 | Shift       | Move down        |
+| Left Ctrl   | Sprint           |
+| F1 (hold)   | Gamemode selector (mouse left/right picks, release applies) |
 | F2          | Screenshot       |
 | F3          | Toggle debug UI  |
 | F4          | Toggle wireframe |
@@ -129,8 +142,11 @@ Fake directional (per-face) lighting, not a real light-propagation system: `Bloc
 
 ## Game Modes
 
-- **CREATIVE**: Instant block break, infinite blocks
 - **SURVIVAL**: Timed breaking (hardness-based), consumes inventory
+- **CREATIVE**: Instant block break, infinite blocks, double tap space toggles flying
+- **SPECTATOR**: Free flight, no block interaction, hotbar hidden
+
+Enum order (`GameMode`) is the left-to-right button order in the selector, and each mode's `getLabel()` is the name shown under the panel. Switch at runtime by holding `F1` (see "Gamemode Selector").
 
 ## Settings (game/Settings.java)
 
@@ -145,6 +161,10 @@ MAX_BLOCK_REACH = 5.0f
 BREAK_COOLDOWN_MS = 200
 HOTBAR_CELL_COUNT = 9
 INVENTORY_SIZE = 36  // 9 hotbar + 27 main
+GAMEMODE_BUTTON_SIZE = 80
+GAMEMODE_ICON_SIZE = 0.6f          // fraction of a button the icon occupies
+GAMEMODE_ICON_SUPERSAMPLE = 2.0f   // SVG rasterization scale
+GAMEMODE_CURSOR_SENSITIVITY = 1.5f // selector cursor travel per pixel of mouse movement
 ```
 
 ## Development Notes
@@ -166,6 +186,15 @@ INVENTORY_SIZE = 36  // 9 hotbar + 27 main
 ```
 
 3. BlockRegistry auto-loads from JSON
+
+### Adding a New UI Icon
+
+1. Drop the SVG in `src/main/resources/icons/` (stroke-only, `fill="none"` on the root, white strokes so the ImGui tint controls the color)
+2. Load it once with `SvgLoader.load("icons/my_icon.svg", pixelSize)` and keep the `Texture`
+3. Draw it with `ImGui.getWindowDrawList().addImage(texture.getTextureId(), x0, y0, x1, y1, 0, 0, 1, 1, tint)`
+4. Free it in the owning UI component's `cleanup()`
+
+Non-square SVGs are scaled to fit and centered in a square texture, so the aspect ratio is kept.
 
 ### Coordinate Conversion
 
@@ -197,6 +226,9 @@ int worldX = chunk.x * Settings.CHUNK_WIDTH + localX;
 | `Render`        | OpenGL rendering pipeline                                                                                    |
 | `ShaderProgram` | GLSL shader management                                                                                       |
 | `BlockRegistry` | JSON block definition loader                                                                                 |
+| `UIManager`     | ImGui context/frame owner, renders the UI components                                                         |
+| `GameModeUI`    | F1 gamemode selector panel, owns the rasterized SVG icon textures                                            |
+| `SvgLoader`     | Rasterizes an SVG resource into a `Texture` (NanoSVG)                                                        |
 
 ## Common Tasks
 
@@ -230,4 +262,5 @@ Edit `Chunk.generateBlocks()` (terrain, calls `BlockGenerator.getBlockAt()` per 
 - Immediate whole-chunk mesh rebuild on block change (breaks/places rebuild the owning chunk + border-adjacent chunks on edge edits)
 - Transparent blocks (leaves, etc.) render alpha-cutout, not alpha-blended, since per-block sort isn't possible once meshes are merged
 - Lighting is a static per-face brightness constant baked into the mesh at build time, not a real light-propagation/light-map system - see "Lighting" above
+- UI icons are SVGs rasterized at runtime (NanoSVG), not PNGs - one asset works at any button size, and `Texture` takes a filter argument so only these use `GL_LINEAR` while pixel art stays `GL_NEAREST`
 - No persistence yet - `World.save()` is a stub

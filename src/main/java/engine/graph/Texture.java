@@ -28,8 +28,14 @@ public class Texture {
     private String texturePath;
 
     public Texture(int width, int height, ByteBuffer buf) {
+        this(width, height, buf, GL_NEAREST);
+    }
+
+    // Smooth filtering is wanted for anything that isn't pixel art, such as the
+    // rasterized SVG icons.
+    public Texture(int width, int height, ByteBuffer buf, int filter) {
         this.texturePath = "";
-        this.generateTexture(width, height, buf);
+        this.generateTexture(width, height, buf, filter);
     }
 
     public Texture(String texturePath) {
@@ -47,18 +53,18 @@ public class Texture {
                 throw new RuntimeException("Image file [" + texturePath + "] not loaded: " + stbi_failure_reason());
             }
 
-            this.generateTexture(w.get(), h.get(), buf);
+            this.generateTexture(w.get(), h.get(), buf, GL_NEAREST);
             stbi_image_free(buf);
         }
     }
 
-    void generateTexture(int width, int height, ByteBuffer buf) {
+    void generateTexture(int width, int height, ByteBuffer buf, int filter) {
         this.textureId = glGenTextures();
 
         glBindTexture(GL_TEXTURE_2D, textureId);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
         glTexImage2D(
                 GL_TEXTURE_2D,
                 0,

@@ -20,6 +20,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_8;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_9;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F2;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F3;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F4;
@@ -71,6 +72,11 @@ public class World implements IAppLogic {
     private boolean f2Pressed = false;
     private boolean f3Pressed = false;
     private boolean f4Pressed = false;
+
+    // F1 famemode selector
+    private boolean gameModeMenuOpen = false;
+    private int gameModeSelection = 0;
+    private float gameModeCursorX = 0; // virtual cursor offset, in pixels from the center of the panel
 
     public World(int seed, String name) {
         this.generatedChunks = new HashMap<>();
@@ -178,6 +184,15 @@ public class World implements IAppLogic {
         }
         this.camera.updateMovement(this.gameMode, deltaTime);
 
+        // F1 held opens the gamemode selector, releasing it applies the selection
+        boolean f1Down = window.isKeyPressed(GLFW_KEY_F1);
+        if (f1Down && !this.gameModeMenuOpen) {
+            this.openGameModeMenu();
+        } else if (!f1Down && this.gameModeMenuOpen) {
+            this.gameModeMenuOpen = false;
+            this.setGameMode(GameMode.values()[this.gameModeSelection]);
+        }
+
         // F2 to take screenshot
         if (window.isKeyPressed(GLFW_KEY_F2)) {
             if (!f2Pressed) {
@@ -237,13 +252,18 @@ public class World implements IAppLogic {
             this.inventory.setSelectedSlot(8);
         }
 
-        // Looking around using mouse
+        // Looking around using mouse, or moving the gamemode selection while the
+        // selector is open
         MouseInput mouseInput = window.getMouseInput();
         Vector2f displVec = mouseInput.getDisplVec();
-        this.camera.addRotation(
-                -(float) java.lang.Math.toRadians(displVec.x * Settings.MOUSE_SENSITIVITY),
-                -(float) java.lang.Math.toRadians(displVec.y * Settings.MOUSE_SENSITIVITY),
-                0);
+        if (this.gameModeMenuOpen) {
+            this.updateGameModeSelection(displVec.y);
+        } else {
+            this.camera.addRotation(
+                    -(float) java.lang.Math.toRadians(displVec.x * Settings.MOUSE_SENSITIVITY),
+                    -(float) java.lang.Math.toRadians(displVec.y * Settings.MOUSE_SENSITIVITY),
+                    0);
+        }
         this.calculateTargetBlock();
         this.scene.setTargetBlock(this.targetBlock);
 
@@ -268,7 +288,7 @@ public class World implements IAppLogic {
         // Block breaking
         long timeSinceLastBreak = System.currentTimeMillis() - this.lastBlockBreakTime;
         if ((this.gameMode == GameMode.SURVIVAL || this.gameMode == GameMode.CREATIVE)
-                && mouseInput.isLeftButtonPressed() && this.targetBlock != null) {
+                && !this.gameModeMenuOpen && mouseInput.isLeftButtonPressed() && this.targetBlock != null) {
             // Check cooldown only for creative mode (instant breaking) to prevent
             // accidental chain-breaks
             if (this.gameMode == GameMode.CREATIVE && timeSinceLastBreak <= Settings.BREAK_COOLDOWN_MS) {
@@ -333,6 +353,7 @@ public class World implements IAppLogic {
 
         // Block placing
         if ((this.gameMode == GameMode.SURVIVAL || this.gameMode == GameMode.CREATIVE)
+                && !this.gameModeMenuOpen
                 && mouseInput.isRightButtonPressed()
                 && this.targetBlock != null
                 && this.inventory.getSelectedItemType() != null) {
@@ -370,6 +391,43 @@ public class World implements IAppLogic {
 
     public GameMode getGameMode() {
         return this.gameMode;
+    }
+
+    public boolean isGameModeMenuOpen() {
+        return this.gameModeMenuOpen;
+    }
+
+    public int getGameModeSelection() {
+        return this.gameModeSelection;
+    }
+
+    // Opens the selector with the cursor sitting on the button of the current
+    // gamemode, so releasing F1 without moving the mouse changes nothing.
+    private void openGameModeMenu() {
+        this.gameModeMenuOpen = true;
+        this.gameModeSelection = this.gameMode.ordinal();
+        this.gameModeCursorX = (this.gameMode.ordinal() - (GameMode.values().length - 1) / 2.0f)
+                * this.getGameModeButtonStep();
+    }
+
+    // Moves the virtual cursor by the horizontal mouse movement and picks the
+    // button it now sits on. The cursor is clamped to the outermost buttons so
+    // overshooting the panel doesn't build up an offset that has to be undone.
+    private void updateGameModeSelection(float mouseDeltaX) {
+        int count = GameMode.values().length;
+        float step = this.getGameModeButtonStep();
+        float limit = (count - 1) * step / 2.0f;
+
+        this.gameModeCursorX += mouseDeltaX * Settings.GAMEMODE_CURSOR_SENSITIVITY;
+        this.gameModeCursorX = Math.max(-limit, Math.min(limit, this.gameModeCursorX));
+
+        int selection = Math.round(this.gameModeCursorX / step + (count - 1) / 2.0f);
+        this.gameModeSelection = Math.max(0, Math.min(count - 1, selection));
+    }
+
+    // Distance between the centers of two neighboring gamemode buttons
+    private float getGameModeButtonStep() {
+        return Settings.GAMEMODE_BUTTON_SIZE + Settings.GAMEMODE_BUTTON_GAP;
     }
 
     public void setGameMode(GameMode gameMode) {

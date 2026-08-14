@@ -70,6 +70,20 @@
             <classifier>${lwjgl.natives}</classifier>
         </dependency>
 
+        <!-- NanoVG (bundles NanoSVG, used to rasterize the UI's SVG icons) -->
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-nanovg</artifactId>
+            <version>${lwjgl.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-nanovg</artifactId>
+            <version>${lwjgl.version}</version>
+            <classifier>${lwjgl.natives}</classifier>
+        </dependency>
+
         <!-- JOML (math library) -->
         <dependency>
             <groupId>org.joml</groupId>

@@ -14,6 +14,7 @@ public class UIManager {
 
     private final DebugUI debugUI;
     private final HotbarUI hotbarUI;
+    private final GameModeUI gameModeUI;
 
     public UIManager(Window window) {
         ImGui.createContext();
@@ -32,20 +33,26 @@ public class UIManager {
         // UI components
         this.debugUI = new DebugUI();
         this.hotbarUI = new HotbarUI();
+        this.gameModeUI = new GameModeUI();
     }
 
     public void render(World world, Window window) {
         imGuiGlfw.newFrame();
         ImGui.newFrame();
 
-        // F3 debug UI
-        if (world.isF3Pressed()) {
-            debugUI.render(world);
-        }
-
         // hotbar ui
         if (world.getGameMode() != GameMode.SPECTATOR) {
             hotbarUI.render(world, window);
+        }
+
+        // F1 gamemode selector
+        if (world.isGameModeMenuOpen()) {
+            gameModeUI.render(world, window);
+        }
+
+        // F3 debug UI
+        if (world.isF3Pressed()) {
+            debugUI.render(world);
         }
 
         ImGui.render();
@@ -53,6 +60,7 @@ public class UIManager {
     }
 
     public void cleanup() {
+        gameModeUI.cleanup();
         imGuiGl3.dispose();
         imGuiGlfw.dispose();
         ImGui.destroyContext();

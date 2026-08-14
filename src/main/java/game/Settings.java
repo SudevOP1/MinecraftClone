@@ -32,7 +32,7 @@ public class Settings {
     public static final float MAX_WALK_SPEED = 4.5f;
     public static final float SNEAK_SPEED_MULTIPLIER = 0.3f;
     public static final float SPRINT_SPEED_MULTIPLIER = 1.35f;
-    public static final float SPRINT_ACCELERATION_MULTIPLIER = 1.95f;
+    public static final float SPRINT_ACCELERATION_MULTIPLIER = 2.0f;
     public static final float FLY_SPRINT_SPEED_MULTIPLIER = 2.0f;
     public static final float FLY_SPRINT_ACCELERATION_MULTIPLIER = 2.0f;
     public static final float AIR_CONTROL = 0.25f; // fraction of the walk acceleration usable while airborne
@@ -65,5 +65,26 @@ public class Settings {
     public static final int HOTBAR_CELL_SELECTED_BORDER_COLOR = 0xFFBFBFBF; // #bfbfbfff
     public static final int HOTBAR_CELL_ITEM_COUNT_COLOR = 0xFFFFFFFF; // #ffffffff
     public static final int HOTBAR_CELL_ITEM_COUNT_FONT_SIZE = 12;
+
+    // gamemode selector (held F1)
+    public static final int GAMEMODE_BUTTON_SIZE = 80;
+    public static final int GAMEMODE_BUTTON_GAP = 8;
+    public static final int GAMEMODE_PANEL_PADDING = 10;
+    public static final float GAMEMODE_ICON_SIZE = 0.6f; // fraction of the button a icon may occupy
+    public static final float GAMEMODE_ICON_SUPERSAMPLE = 2.0f; // icons are rasterized at this multiple of their
+                                                                // on screen size
+    public static final int GAMEMODE_LABEL_FONT_SIZE = 20;
+    public static final int GAMEMODE_LABEL_PADDING = 12; // gap between the panel and the selected mode's name
+    // How far the virtual selection cursor travels per pixel of mouse movement.
+    // Lower values need a wider mouse sweep to cross the whole panel.
+    public static final float GAMEMODE_CURSOR_SENSITIVITY = 1.5f;
+    // colors (in ARGB format)
+    public static final int GAMEMODE_PANEL_COLOR = 0x80000000; // #00000080
+    public static final int GAMEMODE_BUTTON_COLOR = 0x40000000; // #00000040
+    public static final int GAMEMODE_BUTTON_SELECTED_COLOR = 0x59FFFFFF; // #ffffff59
+    public static final int GAMEMODE_BUTTON_SELECTED_BORDER_COLOR = 0xFFFFFFFF; // #ffffffff
+    public static final int GAMEMODE_BUTTON_SELECTED_BORDER_SIZE = 3;
+    public static final int GAMEMODE_ICON_COLOR = 0xFFFFFFFF; // #ffffffff
+    public static final int GAMEMODE_LABEL_COLOR = 0xFFFFFFFF; // #ffffffff
 
 }
