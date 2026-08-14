@@ -11,6 +11,8 @@ public class Settings {
     public static final float PLAYER_HEIGHT = 1.8f;
     public static final float PLAYER_WIDTH = 0.6f;
     public static final float PLAYER_EYE_HEIGHT = 1.62f; // camera offset above the player's feet
+    public static final float SNEAK_EYE_DROP = 0.2f;
+    public static final float SNEAK_EYE_TRANSITION_SPEED = 18.0f;
     public static final float DEFAULT_SPAWN_X = 0;
     public static final float DEFAULT_SPAWN_Y = PLAYER_HEIGHT + 1;
     public static final float DEFAULT_SPAWN_Z = 0;

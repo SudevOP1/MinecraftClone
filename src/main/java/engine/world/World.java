@@ -51,7 +51,7 @@ public class World implements IAppLogic {
 
     public String name;
     public int seed;
-    private GameMode gameMode = GameMode.SPECTATOR;
+    private GameMode gameMode = GameMode.SURVIVAL;
     public Map<Vector2s, Chunk> generatedChunks;
     public Map<Vector2s, Chunk> chunks;
     public Camera camera;
@@ -506,7 +506,7 @@ public class World implements IAppLogic {
     // Uses DDA Voxel Traversal (Digital Differential Analyzer) to find the target
     // block
     private void calculateTargetBlock() {
-        Vector3f origin = new Vector3f(this.camera.getPosition());
+        Vector3f origin = new Vector3f(this.camera.getEyePosition());
         Vector3f dir = this.camera.getForward();
 
         // Current (camera) voxel coordinates

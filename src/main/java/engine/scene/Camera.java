@@ -20,6 +20,9 @@ public class Camera {
     private Vector3f velocity = new Vector3f();
     private Matrix4f viewMatrix = new Matrix4f();
 
+    private float sneakEyeDrop = 0;
+    private Vector3f eyePosition = new Vector3f();
+
     private Vector3f moveInput = new Vector3f();
     private Vector3f rquestedDir = new Vector3f();
 
@@ -32,6 +35,10 @@ public class Camera {
     private boolean onGround = false;
     private boolean sprintRequested = false; // left control held this frame
     private boolean sprinting = false; // sprint request that actually passed its conditions
+    private boolean jumpRequested = false;
+    private boolean sneakRequested = false;
+    private int sneakGroundY = 0;
+    private boolean sneakGroundValid = false;
     private SolidBlockChecker solidBlockChecker;
     private long lastJumpKeyPressNanos = 0;
 
@@ -51,6 +58,10 @@ public class Camera {
 
     public Vector3f getPosition() {
         return this.position;
+    }
+
+    public Vector3f getEyePosition() {
+        return this.eyePosition;
     }
 
     public Matrix4f getViewMatrix() {
@@ -134,9 +145,10 @@ public class Camera {
         }
 
         // Build view matrix = lookAt
+        this.eyePosition.set(this.position.x, this.position.y - this.sneakEyeDrop, this.position.z);
         this.viewMatrix.identity().lookAt(
-                this.position,
-                new Vector3f(this.position).add(this.forward),
+                this.eyePosition,
+                new Vector3f(this.eyePosition).add(this.forward),
                 this.up);
     }
 
@@ -199,10 +211,12 @@ public class Camera {
 
     public void moveUp() {
         this.moveInput.y += 1;
+        this.jumpRequested = true;
     }
 
     public void moveDown() {
         this.moveInput.y -= 1;
+        this.sneakRequested = true;
     }
 
     public void requestSprint() {
@@ -234,14 +248,24 @@ public class Camera {
         }
         boolean collide = gameMode == GameMode.SURVIVAL || gameMode == GameMode.CREATIVE;
 
-        boolean jumping = this.moveInput.y > 0;
-        boolean sneaking = this.moveInput.y < 0;
+        boolean jumping = this.jumpRequested;
+        boolean sneaking = this.sneakRequested;
+        this.jumpRequested = false;
+        this.sneakRequested = false;
+        // While flying the sneak key is a descend key, so it neither lowers the
+        // camera nor keeps the player on the block.
+        boolean crouching = sneaking && !this.isFlying;
+        this.updateSneakEyeDrop(crouching, deltaTime);
+        // Sneaking only slows the player down while they are actually standing on
+        // something. In mid air the key is just the edge guard and the lowered
+        // camera, so a fall keeps its full speed.
+        boolean sneakingOnGround = crouching && this.onGround;
         // While flying any direction may be sprinted in, while walking the player has
         // to be running forwards instead of sneaking or strafing backwards
         this.sprinting = this.sprintRequested
                 && (this.isFlying
                         ? this.moveInput.lengthSquared() > 0
-                        : !sneaking && this.moveInput.z > 0);
+                        : !sneakingOnGround && this.moveInput.z > 0);
         this.sprintRequested = false;
         this.buildRequestedDirection();
         this.moveInput.zero();
@@ -249,17 +273,30 @@ public class Camera {
         if (this.isFlying) {
             this.applyFlyingPhysics(deltaTime, this.sprinting);
         } else {
-            this.applyWalkingPhysics(deltaTime, jumping, sneaking, this.sprinting);
+            this.applyWalkingPhysics(deltaTime, jumping, sneakingOnGround, this.sprinting);
         }
 
         // Stop drifting forever once the velocity is small enough to be invisible
         if (this.velocity.lengthSquared() < 1e-6f) {
             this.velocity.zero();
-            return;
+        } else {
+            this.applyMovement(deltaTime, collide, crouching);
         }
 
-        this.applyMovement(deltaTime, collide);
+        // Always rebuild the view, a standing still player can still be in the
+        // middle of the sneak transition.
         this.recalc();
+    }
+
+    // Eases the eye height towards its target. The exponential form makes the
+    // transition take the same wall clock time at any frame rate.
+    private void updateSneakEyeDrop(boolean crouching, float deltaTime) {
+        float target = crouching ? Settings.SNEAK_EYE_DROP : 0;
+        float blend = 1.0f - (float) java.lang.Math.exp(-Settings.SNEAK_EYE_TRANSITION_SPEED * deltaTime);
+        this.sneakEyeDrop += (target - this.sneakEyeDrop) * blend;
+        if (java.lang.Math.abs(target - this.sneakEyeDrop) < 1e-4f) {
+            this.sneakEyeDrop = target;
+        }
     }
 
     // Builds the requested direction in world space. While flying it follows the
@@ -327,7 +364,7 @@ public class Camera {
     // Horizontal movement is accelerated and damped, vertical movement is a jump
     // impulse plus constant gravity. Air control is deliberately weak so a jump
     // mostly keeps the momentum it started with.
-    private void applyWalkingPhysics(float deltaTime, boolean jumping, boolean sneaking, boolean sprinting) {
+    private void applyWalkingPhysics(float deltaTime, boolean jumping, boolean sneakingOnGround, boolean sprinting) {
         float acceleration = this.onGround
                 ? Settings.WALK_ACCELERATION
                 : Settings.WALK_ACCELERATION * Settings.AIR_CONTROL;
@@ -343,7 +380,7 @@ public class Camera {
         this.velocity.z *= decay;
 
         float maxSpeed = Settings.MAX_WALK_SPEED;
-        if (sneaking) {
+        if (sneakingOnGround) {
             maxSpeed *= Settings.SNEAK_SPEED_MULTIPLIER;
         } else if (sprinting) {
             maxSpeed *= Settings.SPRINT_SPEED_MULTIPLIER;
@@ -369,7 +406,7 @@ public class Camera {
 
     // Moves one axis at a time so that sliding along a wall keeps the movement
     // along the other two axes instead of cancelling the whole step.
-    private void applyMovement(float deltaTime, boolean collide) {
+    private void applyMovement(float deltaTime, boolean collide, boolean crouching) {
         float dx = this.velocity.x * deltaTime;
         float dy = this.velocity.y * deltaTime;
         float dz = this.velocity.z * deltaTime;
@@ -382,8 +419,22 @@ public class Camera {
 
         this.onGround = false;
         this.moveY(dy);
-        this.moveX(dx);
-        this.moveZ(dz);
+
+        if (this.onGround) {
+            this.sneakGroundY = this.groundLayerBelowFeet();
+            this.sneakGroundValid = true;
+        }
+
+        // A sneaking player refuses any step that would leave nothing underneath
+        // them. The test keeps using the layer they last stood on, so it also
+        // covers the airborne part of a sneak jump. Once they are below that
+        // layer they have already left it and the guard has nothing left to hold
+        // on to.
+        boolean edgeGuard = crouching
+                && this.sneakGroundValid
+                && this.getFeetY() >= this.sneakGroundY + 1 - Settings.COLLISION_EPSILON;
+        this.moveX(dx, edgeGuard);
+        this.moveZ(dz, edgeGuard);
     }
 
     private void moveY(float amount) {
@@ -411,44 +462,123 @@ public class Camera {
         this.velocity.y = 0;
     }
 
-    private void moveX(float amount) {
+    private void moveX(float amount, boolean edgeGuard) {
         if (amount == 0) {
             return;
         }
+        float startX = this.position.x;
         this.position.x += amount;
-        if (!this.collidesAtCurrentPosition()) {
-            return;
+
+        if (this.collidesAtCurrentPosition()) {
+            float halfWidth = Settings.PLAYER_WIDTH / 2f;
+            if (amount > 0) {
+                int blockX = (int) java.lang.Math.floor(this.position.x + halfWidth);
+                this.position.x = blockX - halfWidth - Settings.COLLISION_EPSILON;
+            } else {
+                int blockX = (int) java.lang.Math.floor(this.position.x - halfWidth);
+                this.position.x = blockX + 1 + halfWidth + Settings.COLLISION_EPSILON;
+            }
+            this.velocity.x = 0;
         }
 
-        float halfWidth = Settings.PLAYER_WIDTH / 2f;
-        if (amount > 0) {
-            int blockX = (int) java.lang.Math.floor(this.position.x + halfWidth);
-            this.position.x = blockX - halfWidth - Settings.COLLISION_EPSILON;
-        } else {
-            int blockX = (int) java.lang.Math.floor(this.position.x - halfWidth);
-            this.position.x = blockX + 1 + halfWidth + Settings.COLLISION_EPSILON;
+        // Checked after the wall snap, the snapped position is the one the player
+        // ends the step on.
+        if (edgeGuard) {
+            this.clampToGroundSupport(true, startX);
         }
-        this.velocity.x = 0;
     }
 
-    private void moveZ(float amount) {
+    private void moveZ(float amount, boolean edgeGuard) {
         if (amount == 0) {
             return;
         }
+        float startZ = this.position.z;
         this.position.z += amount;
-        if (!this.collidesAtCurrentPosition()) {
+
+        if (this.collidesAtCurrentPosition()) {
+            float halfWidth = Settings.PLAYER_WIDTH / 2f;
+            if (amount > 0) {
+                int blockZ = (int) java.lang.Math.floor(this.position.z + halfWidth);
+                this.position.z = blockZ - halfWidth - Settings.COLLISION_EPSILON;
+            } else {
+                int blockZ = (int) java.lang.Math.floor(this.position.z - halfWidth);
+                this.position.z = blockZ + 1 + halfWidth + Settings.COLLISION_EPSILON;
+            }
+            this.velocity.z = 0;
+        }
+
+        if (edgeGuard) {
+            this.clampToGroundSupport(false, startZ);
+        }
+    }
+
+    // Pulls the player back along the axis it just moved on until its box is over
+    // solid ground again, so a sneaking player walks right up to the lip of the
+    // block. Reverting the whole step instead would leave them a variable
+    // distance short of the edge, since the step length depends on the frame rate.
+    private void clampToGroundSupport(boolean xAxis, float startValue) {
+        if (this.hasGroundSupport(this.sneakGroundY)) {
             return;
         }
 
-        float halfWidth = Settings.PLAYER_WIDTH / 2f;
-        if (amount > 0) {
-            int blockZ = (int) java.lang.Math.floor(this.position.z + halfWidth);
-            this.position.z = blockZ - halfWidth - Settings.COLLISION_EPSILON;
-        } else {
-            int blockZ = (int) java.lang.Math.floor(this.position.z - halfWidth);
-            this.position.z = blockZ + 1 + halfWidth + Settings.COLLISION_EPSILON;
+        float endValue = xAxis ? this.position.x : this.position.z;
+        float safe = 0; // fraction of the step known to keep the player supported
+        float unsafe = 1;
+        for (int i = 0; i < 8; i++) {
+            float mid = (safe + unsafe) / 2f;
+            this.setHorizontalAxis(xAxis, startValue + (endValue - startValue) * mid);
+            if (this.hasGroundSupport(this.sneakGroundY) && !this.collidesAtCurrentPosition()) {
+                safe = mid;
+            } else {
+                unsafe = mid;
+            }
         }
-        this.velocity.z = 0;
+
+        this.setHorizontalAxis(xAxis, startValue + (endValue - startValue) * safe);
+        if (xAxis) {
+            this.velocity.x = 0;
+        } else {
+            this.velocity.z = 0;
+        }
+    }
+
+    private void setHorizontalAxis(boolean xAxis, float value) {
+        if (xAxis) {
+            this.position.x = value;
+        } else {
+            this.position.z = value;
+        }
+    }
+
+    // The block layer the player is standing on. The feet rest one epsilon above
+    // it, so the probe reaches a little further down to land inside it.
+    private int groundLayerBelowFeet() {
+        return (int) java.lang.Math.floor(this.getFeetY() - 2 * Settings.COLLISION_EPSILON);
+    }
+
+    // True if any solid block of the given layer sits under the player's bounding
+    // box. Used by the sneak edge guard, so overhanging a ledge is still allowed
+    // as long as part of the box is over solid ground.
+    private boolean hasGroundSupport(int y) {
+        if (this.solidBlockChecker == null) {
+            return false;
+        }
+
+        float halfWidth = Settings.PLAYER_WIDTH / 2f;
+
+        int minX = (int) java.lang.Math.floor(this.position.x - halfWidth);
+        int maxX = (int) java.lang.Math.ceil(this.position.x + halfWidth) - 1;
+        int minZ = (int) java.lang.Math.floor(this.position.z - halfWidth);
+        int maxZ = (int) java.lang.Math.ceil(this.position.z + halfWidth) - 1;
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                if (this.solidBlockChecker.isSolid(x, y, z)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Returns true if the player's bounding box overlaps the voxel at these
