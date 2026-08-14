@@ -8,20 +8,38 @@ public class Settings {
     public static final short CHUNK_WIDTH = 16;
     public static final short CHUNK_HEIGHT = 100;
     public static final short RENDER_DISTANCE = 15;
-    public static final float PLAYER_HEIGHT = 2.0f;
+    public static final float PLAYER_HEIGHT = 1.8f;
+    public static final float PLAYER_WIDTH = 0.6f;
+    public static final float PLAYER_EYE_HEIGHT = 1.62f; // camera offset above the player's feet
     public static final float DEFAULT_SPAWN_X = 0;
     public static final float DEFAULT_SPAWN_Y = PLAYER_HEIGHT + 1;
     public static final float DEFAULT_SPAWN_Z = 0;
 
-    // movement (all speeds/accelerations are in blocks per second, frame rate independent)
+    // movement (all speeds/accelerations are in blocks per second, frame rate
+    // independent)
     public static final float MOUSE_SENSITIVITY = 0.1f;
     public static final float MOVE_ACCELERATION = 45.0f;
     public static final float MAX_HORIZONTAL_SPEED = 11.0f;
     public static final float MAX_VERTICAL_SPEED = 9.0f;
-    // fraction of the velocity that survives after one full second of no input
-    public static final float MOVE_DAMPING = 0.02f;
-    // largest delta time a single frame may apply, stops lag spikes from teleporting the player
-    public static final float MAX_DELTA_TIME = 0.1f;
+    public static final float MOVE_DAMPING = 0.02f; // fraction of the velocity that survives after one full second of
+                                                    // no input
+    public static final float MAX_DELTA_TIME = 0.1f; // largest delta time a single frame may apply, stops lag spikes
+                                                     // from teleporting the player
+    public static final float DOUBLE_TAP_MAX_TIME = 0.5f; // seconds
+
+    // walking physics
+    public static final float GRAVITY = 32.0f; // blocks per second squared
+    public static final float TERMINAL_VELOCITY = 78.0f; // fastest the player may fall
+    public static final float JUMP_VELOCITY = 9.0f; // gives roughly a 1.25 block jump at the gravity above
+    public static final float WALK_ACCELERATION = 60.0f;
+    public static final float MAX_WALK_SPEED = 4.5f;
+    public static final float SNEAK_SPEED_MULTIPLIER = 0.3f;
+    public static final float AIR_CONTROL = 0.25f; // fraction of the walk acceleration usable while airborne
+    public static final float GROUND_DAMPING = 1e-6f; // fraction of the horizontal velocity surviving one second
+    public static final float AIR_DAMPING = 0.6f; // much weaker, so jumps keep their momentum
+
+    // collision
+    public static final float COLLISION_EPSILON = 1e-3f; // gap left between the player and a block it snaps against
 
     // blocks
     public static final float MAX_BLOCK_REACH = 5.0f;

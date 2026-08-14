@@ -66,6 +66,7 @@ public class World implements IAppLogic {
 
     private boolean showDebug = false;
     private boolean breakingBlock = false;
+    private boolean spacePressed = false;
     private boolean f2Pressed = false;
     private boolean f3Pressed = false;
     private boolean f4Pressed = false;
@@ -95,6 +96,13 @@ public class World implements IAppLogic {
     public void init(Window window, Scene scene, Render render) {
         this.scene = scene;
         this.camera = scene.getCamera();
+
+        // The camera resolves its own collisions, it only needs to be able to ask
+        // whether a given voxel is solid.
+        this.camera.setSolidBlockChecker((x, y, z) -> {
+            BlockType blockType = this.getBlockAt(x, y, z);
+            return blockType != null && blockType.isSolid;
+        });
 
         this.updateChunks(true);
 
@@ -151,13 +159,20 @@ public class World implements IAppLogic {
         if (window.isKeyPressed(GLFW_KEY_D)) {
             this.camera.moveRight();
         }
-        if (window.isKeyPressed(GLFW_KEY_SPACE)) {
+        boolean spaceDown = window.isKeyPressed(GLFW_KEY_SPACE);
+        if (spaceDown) {
+            // Only creative players may switch between flying and walking; a double
+            // tap of space is what toggles it.
+            if (!this.spacePressed) {
+                this.camera.onJumpKeyPressed(this.gameMode == GameMode.CREATIVE);
+            }
             this.camera.moveUp();
         }
+        this.spacePressed = spaceDown;
         if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
             this.camera.moveDown();
         }
-        this.camera.updateMovement(deltaTime);
+        this.camera.updateMovement(this.gameMode, deltaTime);
 
         // F2 to take screenshot
         if (window.isKeyPressed(GLFW_KEY_F2)) {
@@ -248,10 +263,11 @@ public class World implements IAppLogic {
 
         // Block breaking
         long timeSinceLastBreak = System.currentTimeMillis() - this.lastBlockBreakTime;
-        if (this.gameMode.canBreakBlocks() && mouseInput.isLeftButtonPressed() && this.targetBlock != null) {
+        if ((this.gameMode == GameMode.SURVIVAL || this.gameMode == GameMode.CREATIVE)
+                && mouseInput.isLeftButtonPressed() && this.targetBlock != null) {
             // Check cooldown only for creative mode (instant breaking) to prevent
             // accidental chain-breaks
-            if (this.gameMode.canBreakBlocksInstantly() && timeSinceLastBreak <= Settings.BREAK_COOLDOWN_MS) {
+            if (this.gameMode == GameMode.CREATIVE && timeSinceLastBreak <= Settings.BREAK_COOLDOWN_MS) {
                 return;
             }
 
@@ -264,12 +280,12 @@ public class World implements IAppLogic {
                 this.breakingBlock = true;
                 this.breakingTargetBlock = new Vector3s(this.targetBlock.x, this.targetBlock.y, this.targetBlock.z);
 
-                if (this.gameMode.canBreakBlocksInstantly()) {
+                if (this.gameMode == GameMode.CREATIVE) {
                     this.breakBlock(this.targetBlock);
                 } else {
                     this.blockBreakingStartTime = System.currentTimeMillis();
                 }
-            } else if (!this.gameMode.canBreakBlocksInstantly()) {
+            } else if (this.gameMode == GameMode.SURVIVAL) {
                 engine.block.BlockType breakingBlockType = getBlockAt(
                         this.breakingTargetBlock.x,
                         this.breakingTargetBlock.y,
@@ -312,7 +328,7 @@ public class World implements IAppLogic {
         }
 
         // Block placing
-        if (this.gameMode.canPlaceBlocks()
+        if ((this.gameMode == GameMode.SURVIVAL || this.gameMode == GameMode.CREATIVE)
                 && mouseInput.isRightButtonPressed()
                 && this.targetBlock != null
                 && this.inventory.getSelectedItemType() != null) {
