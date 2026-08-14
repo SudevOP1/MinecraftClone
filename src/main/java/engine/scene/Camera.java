@@ -421,6 +421,20 @@ public class Camera {
         this.velocity.z = 0;
     }
 
+    // Returns true if the player's bounding box overlaps the voxel at these
+    // coordinates.
+    public boolean intersectsBlock(int x, int y, int z) {
+        float halfWidth = Settings.PLAYER_WIDTH / 2f;
+        float feetY = this.getFeetY();
+
+        return this.position.x - halfWidth < x + 1
+                && this.position.x + halfWidth > x
+                && feetY < y + 1
+                && feetY + Settings.PLAYER_HEIGHT > y
+                && this.position.z - halfWidth < z + 1
+                && this.position.z + halfWidth > z;
+    }
+
     private float getFeetY() {
         return this.position.y - Settings.PLAYER_EYE_HEIGHT;
     }
