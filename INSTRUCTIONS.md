@@ -12,6 +12,10 @@ mvn clean install
 
 # Run
 mvn exec:java
+
+# Terrain tooling (see "Terrain Tools")
+python tools/spline_editor.py
+python tools/noise_map_viewer.py
 ```
 
 ## Key Components & Technologies
@@ -45,8 +49,14 @@ src/main/java/
 ├── data_structures/
 │   ├── Vector2s.java   # Short-based 2D vector (chunk coords)
 │   └── Vector3s.java   # Short-based 3D vector (block coords)
+├── tools/
+│   └── NoiseMapDumper.java  # Headless sampler for tools/noise_map_viewer.py
 └── utils/
     └── Debug.java      # Debug utilities
+
+tools/                  # Python tuning tools, not part of the game
+├── spline_editor.py    # Edit the terrain splines
+└── noise_map_viewer.py # Preview the noise maps and the blended surface height
 
 src/main/resources/
 ├── blocks_data.json    # Block definitions + texture indices
@@ -70,9 +80,9 @@ src/main/resources/
 
 **Chunk System:**
 
-- Chunks are 16x128x16 (WIDTH x HEIGHT x DEPTH)
-- World Y range: 0-127
-- Render distance: 3 chunks (7x7 = 49 chunks total)
+- Chunks are `CHUNK_WIDTH` x `CHUNK_HEIGHT` x `CHUNK_WIDTH` (16 x 200 x 16)
+- World Y range: 0 to `CHUNK_HEIGHT - 1`
+- Render distance: `RENDER_DISTANCE` chunks (15, so 31x31 = 961 chunks)
 - Chunk coords use `Vector2s`, block coords use `Vector3s`
 
 ## Key Systems
@@ -124,21 +134,21 @@ Icons are SVG (`src/main/resources/icons/`), rasterized once on first render by 
 
 ## Controls
 
-| Key         | Action           |
-| ----------- | ---------------- |
-| Mouse       | Look             |
-| Left Click  | Break block      |
-| Right Click | Place block      |
-| Scroll      | Hotbar slot      |
-| WASD        | Move horizontal  |
-| Space       | Move up          |
-| Shift       | Move down        |
-| Left Ctrl   | Sprint           |
+| Key         | Action                                                      |
+| ----------- | ----------------------------------------------------------- |
+| Mouse       | Look                                                        |
+| Left Click  | Break block                                                 |
+| Right Click | Place block                                                 |
+| Scroll      | Hotbar slot                                                 |
+| WASD        | Move horizontal                                             |
+| Space       | Move up                                                     |
+| Shift       | Move down                                                   |
+| Left Ctrl   | Sprint                                                      |
 | F1 (hold)   | Gamemode selector (mouse left/right picks, release applies) |
-| F2          | Screenshot       |
-| F3          | Toggle debug UI  |
-| F4          | Toggle wireframe |
-| Esc         | Close window     |
+| F2          | Screenshot                                                  |
+| F3          | Toggle debug UI                                             |
+| F4          | Toggle wireframe                                            |
+| Esc         | Close window                                                |
 
 ## Game Modes
 
@@ -154,9 +164,9 @@ Enum order (`GameMode`) is the left-to-right button order in the selector, and e
 WORLD_Y_LOWER_LIMIT = 0
 WORLD_Y_UPPER_LIMIT = 128
 CHUNK_WIDTH = 16
-RENDER_DISTANCE = 3
+CHUNK_HEIGHT = 200
+RENDER_DISTANCE = 15
 MOUSE_SENSITIVITY = 0.1f
-MOVEMENT_SPEED = 0.005f
 MAX_BLOCK_REACH = 5.0f
 BREAK_COOLDOWN_MS = 200
 HOTBAR_CELL_COUNT = 9
@@ -165,6 +175,21 @@ GAMEMODE_BUTTON_SIZE = 80
 GAMEMODE_ICON_SIZE = 0.6f          // fraction of a button the icon occupies
 GAMEMODE_ICON_SUPERSAMPLE = 2.0f   // SVG rasterization scale
 GAMEMODE_CURSOR_SENSITIVITY = 1.5f // selector cursor travel per pixel of mouse movement
+
+// world generation, tuned with the tools in tools/
+SEA_LEVEL = 62                     // also the fallback height if the weights are all zero
+CONTINENTALNESS_NOISE_SCALE        // per-field noise scales, smaller = wider features
+EROSION_NOISE_SCALE
+PEAKS_AND_VALLEYS_NOISE_SCALE
+DIRT_DEPTH_NOISE_SCALE
+CONTINENTALNESS_WEIGHT             // blend ratios, normalized against their own sum
+EROSION_WEIGHT
+PEAKS_AND_VALLEYS_WEIGHT
+MIN_DIRT_DEPTH = 3
+MAX_DIRT_DEPTH = 5
+CONTINENTALNESS_SPLINE_POINTS      // {noise, height} pairs, noise in [-1, 1]
+EROSION_SPLINE_POINTS
+PEAKS_AND_VALLEYS_SPLINE_POINTS
 ```
 
 ## Development Notes
@@ -246,12 +271,39 @@ int worldX = chunk.x * Settings.CHUNK_WIDTH + localX;
 
 ### Modify chunk generation
 
-Edit `Chunk.generateBlocks()` (terrain, calls `BlockGenerator.getBlockAt()` per world coord), `BlockGenerator.java` (terrain rules), or `StructureGenerator.generateOakTree()` (structures). After changing generation, mesh rebuild happens automatically via `ChunkMesher` — no separate mesh code to touch.
+Edit `Chunk.generateData()` (fills the block array, calls `BlockGenerator.getBlockAt()` per world coord), `BlockGenerator.java` (terrain rules), or `StructureGenerator.generateOakTree()` (structures). After changing generation, mesh rebuild happens automatically via `ChunkMesher` — no separate mesh code to touch.
 
-`BlockGenerator` uses `PerlinNoise` (`engine/world/gen/PerlinNoise.java`) for terrain height:
+Surface height comes from three independent noise fields, mirroring Minecraft's approach:
 
-- `PerlinNoise` instance is cached statically per seed (`getNoise()`) — building a new `PerlinNoise` reshuffles a 256-entry permutation table, too costly to do per block.
-- World `x`/`z` are integer block coords; `sample2d` needs fractional lattice input to vary, so callers multiply by `NOISE_SCALE` (0.01) first. Passing raw integer coords makes every octave land exactly on lattice points and `sample2d` returns 0 everywhere (flat world). Lower `NOISE_SCALE` = broader/smoother hills, higher = choppier terrain.
+1. Sample the field with `PerlinNoise.sample2d(x * scale, z * scale)`, giving roughly `[-1, 1]`.
+2. Run that through the field's spline (`Settings.*_SPLINE_POINTS`), which maps a noise value to an absolute height. Splines are x-sorted, linearly interpolated, and clamped at both ends.
+3. Blend the three resulting heights by `Settings.*_WEIGHT` (`BlockGenerator.blendSurfaceY`). Weights are normalized against their own sum, so only their ratio matters; all-zero weights fall back to `SEA_LEVEL`.
+
+| Field             | Role                          | Typical scale      |
+| ----------------- | ----------------------------- | ------------------ |
+| Continentalness   | Broad land/ocean shape        | smallest (widest)  |
+| Erosion           | Flattens or roughens the land | medium             |
+| Peaks and Valleys | Local relief                  | largest (noisiest) |
+
+Notes:
+
+- Spline x is the **raw noise value in `[-1, 1]`**, not a `[0, 1]` remap. `toSplineInput()` only clamps. `toUnitRange()` is the separate `[0, 1]` remap, used for values consumed as a plain fraction (dirt depth).
+- `sample2d` is fBm normalized by total amplitude, so real samples cluster near 0 and rarely approach ±1. Put the interesting spline detail near the middle of the domain, not at the edges.
+- World `x`/`z` are integer block coords; `sample2d` needs fractional lattice input to vary, so callers multiply by a `*_NOISE_SCALE` first. Passing raw integer coords makes every octave land exactly on lattice points and `sample2d` returns 0 everywhere (flat world). Lower scale = broader/smoother features, higher = choppier.
+- Each field gets its own `PerlinNoise` seeded with `worldSeed + <field>_SEED_OFFSET`, so no two fields produce the same map. Instances are cached statically and only rebuilt when the seed changes — constructing one reshuffles a 256-entry permutation table, too costly to do per block.
+- `getBlockAt` is called once per y in a column, so the surface height and dirt depth are cached per `(x, z)` (`prepareColumn`). Chunk generation is single-threaded (`World.ensureChunkData`), so a static cache is safe; that assumption breaks if generation is ever moved off-thread.
+
+### Terrain Tools
+
+Two Python tools in `tools/` (`pip install numpy matplotlib`). Both read their starting values out of `Settings.java` and print paste-ready Java on close. Neither writes to the project.
+
+**`tools/spline_editor.py`** — drag/add/delete points on the three splines (left drag = move, left click on empty space = add, right click = delete). x is the noise value `[-1, 1]`, y is height `[0, CHUNK_HEIGHT]`.
+
+**`tools/noise_map_viewer.py`** — three grayscale parameter maps plus a larger surface-height map with water shaded blue by depth. Sliders vary the weights, noise scales, sea level and sampled area (`xWidth`/`zWidth`). Weights and sea level redraw instantly; scales and widths resample on mouse release.
+
+The viewer never reimplements the noise: `tools/NoiseMapDumper.java` samples it with the real `PerlinNoise`/`BlockGenerator.splineHeight` and writes big-endian floats to a temp file the Python reads. **This means `mvn compile` must run before the viewer.** The only logic duplicated in Python is the weighted blend (`blended()`, mirroring `blendSurfaceY`) — doing it in Java would cost a JVM round-trip per slider step.
+
+Because of that dependency, keep `splineHeight`, `blendSurfaceY`, `OCTAVES` and the `*_SEED_OFFSET` constants public on `BlockGenerator`.
 
 ## Known Design Decisions
 
@@ -264,3 +316,6 @@ Edit `Chunk.generateBlocks()` (terrain, calls `BlockGenerator.getBlockAt()` per 
 - Lighting is a static per-face brightness constant baked into the mesh at build time, not a real light-propagation/light-map system - see "Lighting" above
 - UI icons are SVGs rasterized at runtime (NanoSVG), not PNGs - one asset works at any button size, and `Texture` takes a filter argument so only these use `GL_LINEAR` while pixel art stays `GL_NEAREST`
 - No persistence yet - `World.save()` is a stub
+- Terrain shape lives in `Settings.java` as spline point tables, not in code - the tools in `tools/` edit them, and `BlockGenerator` only evaluates and blends
+- Spline x is raw noise in `[-1, 1]`, not a `[0, 1]` remap - one less conversion between what the editor shows and what the generator feeds in
+- The Python tools shell out to Java rather than porting the noise, so a preview can never disagree with the generator
