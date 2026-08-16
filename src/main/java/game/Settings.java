@@ -6,7 +6,7 @@ public class Settings {
     public static final short WORLD_Y_LOWER_LIMIT = 0;
     public static final short WORLD_Y_UPPER_LIMIT = 128;
     public static final short CHUNK_WIDTH = 16;
-    public static final short CHUNK_HEIGHT = 100;
+    public static final short CHUNK_HEIGHT = 200;
     public static final short RENDER_DISTANCE = 15;
     public static final float PLAYER_HEIGHT = 1.8f;
     public static final float PLAYER_WIDTH = 0.6f;
@@ -16,6 +16,55 @@ public class Settings {
     public static final float DEFAULT_SPAWN_X = 0;
     public static final float DEFAULT_SPAWN_Y = PLAYER_HEIGHT + 1;
     public static final float DEFAULT_SPAWN_Z = 0;
+
+    // world generation
+    public static final double DIRT_DEPTH_NOISE_SCALE = 0.05f;
+    public static final int SEA_LEVEL = 62;
+    public static final double CONTINENTALNESS_NOISE_SCALE = 0.00127;
+    public static final double EROSION_NOISE_SCALE = 0.00222;
+    public static final double PEAKS_AND_VALLEYS_NOISE_SCALE = 0.00916;
+    public static final float CONTINENTALNESS_WEIGHT = 0.45f;
+    public static final float EROSION_WEIGHT = 0.56f;
+    public static final float PEAKS_AND_VALLEYS_WEIGHT = 0.3f;
+    public static final int MIN_DIRT_DEPTH = 3;
+    public static final int MAX_DIRT_DEPTH = 5;
+    // spline points (editable with tools/spline_editor.py)
+    public static final float[][] CONTINENTALNESS_SPLINE_POINTS = {
+            { -1.0f, 160.0f },
+            { -0.8214f, 4.0f },
+            { -0.5154f, 4.0f },
+            { -0.4594f, 75.0f },
+            { -0.2f, 75.0f },
+            { 0.0f, 125.0f },
+            { 0.0668f, 126.6508f },
+            { 0.0818f, 134.8858f },
+            { 0.3094f, 148.5051f },
+            { 1.0f, 160.0f },
+    };
+    public static final float[][] EROSION_SPLINE_POINTS = {
+            { -1.0f, 176.3773f },
+            { -0.8002f, 126.9675f },
+            { -0.3822f, 97.5117f },
+            { -0.3188f, 107.3303f },
+            { -0.0352f, 23.3971f },
+            { 0.1888f, 18.3294f },
+            { 0.3716f, 18.3294f },
+            { 0.4288f, 60.1377f },
+            { 0.573f, 60.1377f },
+            { 0.6142f, 18.3294f },
+            { 0.8342f, 2.493f },
+            { 1.0f, 1.0f },
+    };
+    public static final float[][] PEAKS_AND_VALLEYS_SPLINE_POINTS = {
+            { -1.0f, 0.0f },
+            { -0.6932f, 55.07f },
+            { -0.3648f, 70.9065f },
+            { -0.0102f, 74.3905f },
+            { 0.4002f, 174.4769f },
+            { 0.6316f, 183.0286f },
+            { 0.8742f, 178.2777f },
+            { 1.0f, 179.2278f },
+    };
 
     // movement
     public static final float MOUSE_SENSITIVITY = 0.1f;
@@ -77,8 +126,6 @@ public class Settings {
                                                                 // on screen size
     public static final int GAMEMODE_LABEL_FONT_SIZE = 20;
     public static final int GAMEMODE_LABEL_PADDING = 12; // gap between the panel and the selected mode's name
-    // How far the virtual selection cursor travels per pixel of mouse movement.
-    // Lower values need a wider mouse sweep to cross the whole panel.
     public static final float GAMEMODE_CURSOR_SENSITIVITY = 1.5f;
     // colors (in ARGB format)
     public static final int GAMEMODE_PANEL_COLOR = 0x80000000; // #00000080

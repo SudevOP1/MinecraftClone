@@ -23,3 +23,9 @@ ss/
 
 # tests
 tests/
+
+# python venv
+venv/
+
+# python cache
+__pycache__/
